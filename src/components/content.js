@@ -2,6 +2,7 @@ import React from 'react'
 
 import { serialize } from 'react-serialize'
 
+import MenuBar from './menu-bar';
 import Shape from "./shape"
 import Line from "./line"
 import Image from "./image"
@@ -326,6 +327,7 @@ export default class Content extends React.Component {
             <div
                 style={{ width: '100%', height: '100%', background: '#e5f5ee', backgroundImage: "url('src/images/grid.png')", backgroundSize: "200px 200px", display: 'flex' }}
             >
+                <MenuBar items={this.menubarItems} />
                 <input type="file" id="fileInput" ref="fileUploader" onChange={this.onLoad} style={{ display: "none" }} />
                 <div
                     style={{ width: '100%', height: '100%' }}
