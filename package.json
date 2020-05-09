@@ -1,0 +1,49 @@
+{
+  "name": "reactpaint",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "webpack-dev-server --mode development --open",
+    "build": "webpack --mode production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darekd12345/react-paint.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-loader": "^7.1.4",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-react": "^6.24.1",
+    "css-loader": "^3.5.2",
+    "html-loader": "^0.5.5",
+    "html-webpack-plugin": "^3.2.0",
+    "node-sass": "^4.13.1",
+    "postcss-loader": "^2.1.4",
+    "react": "^16.7.0-alpha.2",
+    "react-dom": "^16.7.0-alpha.2",
+    "sass-loader": "^6.0.7",
+    "style-loader": "^0.20.3",
+    "svg-inline-loader": "^0.8.0",
+    "vue-style-loader": "^4.1.2",
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.10.3"
+  },
+  "bugs": {
+    "url": "https://github.com/darekd12345/react-paint/issues"
+  },
+  "homepage": "https://github.com/darekd12345/react-paint#readme",
+  "dependencies": {
+    "@material-ui/core": "^4.9.11",
+    "file-loader": "^6.0.0",
+    "material-ui": "^0.20.2",
+    "react-color": "^2.18.0",
+    "react-serialize": "^0.2.0",
+    "svg-url-loader": "^5.0.0"
+  }
+}
