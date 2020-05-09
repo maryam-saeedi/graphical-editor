@@ -57,6 +57,23 @@ export default class Content extends React.Component {
         this.offsetX = this.canvas.current.getBoundingClientRect().left
         this.offsetY = this.canvas.current.getBoundingClientRect().top
     }
+    componentDidUpdate(prevProps, prevState) {
+        const { lineType, lineWidth, corner, strokeColor, fillColor, shadow } = this.props
+        if (this.props.activeItem === "Move") {
+            if (lineType != prevProps.lineType || lineWidth != prevProps.lineWidth || corner != prevProps.corner ||
+                strokeColor != prevProps.strokeColor || fillColor != prevProps.fillColor || shadow != prevProps.shadow) {
+                this.state.layouts.forEach(l => {
+                    this.state.refs[l[0]].current.updateStyle(lineType, lineWidth, corner, strokeColor, fillColor, shadow).then(
+                        this.snapshot())
+                })
+                this.state.guids.forEach(g => {
+                    this.state.refs[g.id].current.updateStyle(lineType, lineWidth, corner, strokeColor, fillColor, shadow).then(
+                        this.snapshot())
+                })
+            }
+        }
+    }
+
     handleMouseMove(e) {
         if (this.isDrawing) {
             this.state.refs[this.currentItem].current.handleMoving(0, 0, e.movementX, e.movementY)
@@ -130,7 +147,7 @@ export default class Content extends React.Component {
             const { elements, refs, count } = this.state
             const ref = React.createRef()
             const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { x: 10, y: 10, w: refs[id].current.state.w, h: refs[id].current.state.h, id: count, ref: ref, key: count })
-            refs[id] = ref
+            refs[count] = ref
             this.setState({ elements: [...this.state.elements, { id: count, e: newE }], refs, count: count + 1 })
         }
     }
@@ -222,7 +239,8 @@ export default class Content extends React.Component {
                 ref={ref}
                 updateLayout={this.updateLayout} />
         else if (activeItem === "Rectangle" || activeItem === "Circle" || activeItem === "Ellipse") {
-            element = <Shape x={e.clientX - this.offsetX} y={e.clientY - this.offsetY} w={0} h={0} shape={activeItem} stroke={this.props.strokeColor} fill={this.props.fillColor} weight={this.props.lineWidth} earase={this.state.earase} click={this.state.click} key={this.state.count}
+            element = <Shape x={e.clientX - this.offsetX} y={e.clientY - this.offsetY} w={0} h={0} shape={activeItem} stroke={this.props.strokeColor} fill={this.props.fillColor} dashed={this.props.lineType} weight={this.props.lineWidth} earase={this.state.earase} click={this.state.click}
+                // key={this.state.count}
                 corner={this.props.cornerType}
                 shadow={this.props.shadow}
                 clickInside={this.handleClickInside}

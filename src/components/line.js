@@ -4,10 +4,15 @@ import PropTypes from 'prop-types';
 class Line extends React.Component {
     constructor(props) {
         super(props)
-        console.log('costruct line', this.props.path)
         this.state = {
             points: this.props.points,
             path: this.props.path,
+            arrow: this.props.arrow,
+            stroke: this.props.stroke,
+            weight: this.props.weight,
+            dashed: this.props.dashed,
+            corner: this.props.corner,
+            shadow: this.props.shadow
         }
         this.handleClick = this.handleClick.bind(this)
         this.handleCanvasMove = this.handleCanvasMove.bind(this)
@@ -18,17 +23,12 @@ class Line extends React.Component {
 
     componentDidMount() {
         const { points, path } = this.state
-        console.log('path', path)
         if (path.length > 0)
             return
         path.push(["M"].concat(points[0]))
         path.push(["L"].concat(points[points.length - 1]))
 
-        console.log(path.map(p => p.join(" ")).join(" "))
         this.setState({ path })
-    }
-    componentShouldUpdate() {
-        console.log('update')
     }
     handleClick(e) {
         this.setState({ layout: true })
@@ -46,7 +46,6 @@ class Line extends React.Component {
     handleAddAnchor(e, idx) {
         const self = this
         return function () {
-            console.log('add anchor')
             let { points, path } = self.state
             self.isAdding = true
             self.idx = idx + 1
@@ -63,6 +62,12 @@ class Line extends React.Component {
             })
             self.props.updateLayout(self.props.id, points, inter)
         }
+    }
+    updateStyle(dashed, weight, corner, stroke, fill, shadow) {
+        return new Promise((resolve, reject) => {
+            this.setState({ dashed, weight, corner, stroke, fill, shadow }, resolve(1))
+
+        })
     }
     handleMove(idx, e) {
         // const self = this
@@ -121,7 +126,6 @@ class Line extends React.Component {
     addBridge(idx) {
         const self = this
         return function () {
-            console.log('add bridge')
             let { points, path } = self.state
             const radius = 10 + 2 * self.props.weight
             const ang = Math.atan2(points[idx + 1][1] - points[idx][1], points[idx + 1][0] - points[idx][0]);
@@ -140,7 +144,7 @@ class Line extends React.Component {
     }
     render() {
         const { points, layout, path } = this.state
-        const { arrow, stroke, weight, dashed, corner, shadow } = this.props
+        const { arrow, stroke, weight, dashed, corner, shadow } = this.state
 
         let inter = []
         const angle = Math.atan2(points[points.length - 1][1] - points[points.length - 2][1], points[points.length - 1][0] - points[points.length - 2][0])
@@ -170,8 +174,8 @@ class Line extends React.Component {
                     return tmp.concat(round).join(" ")
                 }).join(" ")}
                     fill="none" stroke={stroke} stroke-width={weight} strokeLinecap={corner} strokeLinejoin={corner}
-                    stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} 
-                    filter={shadow ? "url(#shadow)" : ""}/>
+                    stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`}
+                    filter={shadow ? "url(#shadow)" : ""} />
                 {arrow && <path d={`M${points[points.length - 1].join(" ")} L${points[points.length - 1][0] - 7 * Math.cos(angle - Math.PI / 8)} ${points[points.length - 1][1] - 7 * Math.sin(angle - Math.PI / 8)} L${points[points.length - 1][0] - 7 * Math.cos(angle + Math.PI / 8)} ${points[points.length - 1][1] - 7 * Math.sin(angle + Math.PI / 8)} Z`} fill={stroke} stroke={stroke} stroke-width={weight} />}
             </g>
         )
