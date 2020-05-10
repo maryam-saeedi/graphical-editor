@@ -56,6 +56,7 @@ export default class ReactPaint extends React.Component {
       lineWidth: 3,
       lineType: 0,
       shadow: false,
+      strong: 10,
       corner: 'unset',
       selectedItem: defaultTool,
       toolbarItems: toolbarItems
@@ -66,6 +67,7 @@ export default class ReactPaint extends React.Component {
     this.changeCornerType = this.changeCornerType.bind(this)
     this.changeLineWidth = this.changeLineWidth.bind(this);
     this.changeShaow = this.changeShaow.bind(this)
+    this.changeShadowStrong = this.changeShadowStrong.bind(this)
     this.handleFileBrowser = this.handleFileBrowser.bind(this);
   }
 
@@ -102,6 +104,9 @@ export default class ReactPaint extends React.Component {
   changeLineWidth(event, newValue) {
     this.setState({ lineWidth: newValue })
   }
+  changeShadowStrong(event, newValue) {
+    this.setState({ strong: newValue })
+  }
 
   changeShaow(event) {
     this.setState({ shadow: event.target.checked })
@@ -116,7 +121,7 @@ export default class ReactPaint extends React.Component {
 
   render() {
     return (
-      <React.Fragment>
+      <div style={{ height: '100%' }}>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <Toolbox
             items={this.state.toolbarItems}
@@ -129,10 +134,12 @@ export default class ReactPaint extends React.Component {
             corner={this.state.corner}
             lineWidth={this.state.lineWidth}
             shadow={this.state.shadow}
+            strong={this.state.strong}
             handleChangeLineType={this.changeLineType}
             handleChangeCorner={this.changeCornerType}
             handleChangeLineWidth={this.changeLineWidth}
             handleShadow={this.changeShaow}
+            handleChangeShadowStrong={this.changeShadowStrong}
             style={{ height: "50px" }}
           />
           <div style={{ width: '1px', borderRight: '1px solid gray', margin: '10px 20px' }} />
@@ -152,10 +159,11 @@ export default class ReactPaint extends React.Component {
           lineType={this.state.lineType}
           lineWidth={this.state.lineWidth}
           shadow={this.state.shadow}
+          strong={this.state.strong}
           cornerType={this.state.corner}
           file={this.state.file}
         />
-      </React.Fragment>
+      </div>
     );
   }
 }

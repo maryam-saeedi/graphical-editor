@@ -12,7 +12,8 @@ class Line extends React.Component {
             weight: this.props.weight,
             dashed: this.props.dashed,
             corner: this.props.corner,
-            shadow: this.props.shadow
+            shadow: this.props.shadow,
+            strong: this.props.strong
         }
         this.handleClick = this.handleClick.bind(this)
         this.handleCanvasMove = this.handleCanvasMove.bind(this)
@@ -63,9 +64,9 @@ class Line extends React.Component {
             self.props.updateLayout(self.props.id, points, inter)
         }
     }
-    updateStyle(dashed, weight, corner, stroke, fill, shadow) {
+    updateStyle(prop, value) {
         return new Promise((resolve, reject) => {
-            this.setState({ dashed, weight, corner, stroke, fill, shadow }, resolve(1))
+            this.setState({ [prop]: value }, resolve(1))
 
         })
     }
@@ -144,7 +145,7 @@ class Line extends React.Component {
     }
     render() {
         const { points, layout, path } = this.state
-        const { arrow, stroke, weight, dashed, corner, shadow } = this.state
+        const { arrow, stroke, weight, dashed, corner, shadow, strong } = this.state
 
         let inter = []
         const angle = Math.atan2(points[points.length - 1][1] - points[points.length - 2][1], points[points.length - 1][0] - points[points.length - 2][0])
@@ -152,13 +153,14 @@ class Line extends React.Component {
             <g onClick={this.handleClick}
                 //  onMouseMove={this.handleCanvasMove} 
                 onMouseDown={this.handleCanvasDown} onMouseUp={this.handleCanvasUp}>
-                <defs>
-                    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feOffset result="offOut" in="SourceAlpha" dx="0" dy="0" />
-                        <feGaussianBlur result="blurOut" in="offOut" stdDeviation="15" />
-                        <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
-                    </filter>
-                </defs>
+                <filter id="shadow" x="-50%" y="-50%" height="200%" width="200%">
+                    <feOffset dx="0" dy="0" result="offsetblur" />
+                    <feGaussianBlur in="SourceAlpha" stdDeviation={strong} />
+                    <feComponentTransfer>
+                        <feFuncA type="linear" slope="2" />
+                    </feComponentTransfer>
+                    <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+                </filter>
                 <path d={path.map((p, i) => {
                     let round = []
                     if (i > 0 && !p.includes("a")) {

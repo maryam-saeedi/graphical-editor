@@ -6,6 +6,7 @@ import Slider from '@material-ui/core/Slider';
 import Input from '@material-ui/core/Input';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
+import FormLabel from '@material-ui/core/FormLabel';
 
 import lineTypeIcon from "../images/line_style.svg"
 import lineWeight from "../images/line.svg";
@@ -20,7 +21,7 @@ const Button = props => {
         <div
             // className={"button " + (props.active ? "selected" : "")}
             dangerouslySetInnerHTML={style}
-            // onClick={e => props.handleClick(e, props.name)}
+        // onClick={e => props.handleClick(e, props.name)}
         />
     );
 };
@@ -33,11 +34,11 @@ export default class Options extends React.Component {
     }
 
     render() {
-        const { corner, lineType, lineWidth } = this.props
+        const { corner, lineType, lineWidth, strong } = this.props
         return (
             <div style={{ display: 'flex', flexDirection: 'row', height: '50px' }}>
                 <div style={{ display: "flex", alignItems: 'center' }}>
-                    <div style={{width:"20px", height:"20px"}} dangerouslySetInnerHTML={{__html: cornerTypeIcon}} />
+                    <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: cornerTypeIcon }} />
                     <Select
                         labelId="demo-simple-select-helper-label"
                         id="demo-simple-select-helper"
@@ -50,7 +51,7 @@ export default class Options extends React.Component {
                     </Select>
                 </div>
                 <div style={{ display: "flex", alignItems: 'center' }}>
-                <div style={{width:"20px", height:"20px"}} dangerouslySetInnerHTML={{__html: lineTypeIcon}} />
+                    <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: lineTypeIcon }} />
                     <Select
                         labelId="demo-simple-select-helper-label"
                         id="demo-simple-select-helper"
@@ -64,7 +65,7 @@ export default class Options extends React.Component {
                     </Select>
                 </div>
                 <div style={{ display: "flex", alignItems: 'center' }}>
-                <div style={{width:"20px", height:"20px"}} dangerouslySetInnerHTML={{__html: lineWeight}} />
+                    <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: lineWeight }} />
                     <Slider
                         value={typeof lineWidth === 'number' ? lineWidth : 0}
                         onChange={this.props.handleChangeLineWidth}
@@ -93,16 +94,27 @@ export default class Options extends React.Component {
                     /> */}
                 </div>
                 <div>
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={this.props.shadow}
-                                onChange={this.props.handleShadow}
-                                color="primary"
-                            />
-                        }
-                        label="Shadow"
-                    />
+                    <FormLabel component="legend">Shadow</FormLabel>
+                    <div style={{display: 'flex'}}>
+                        <Checkbox
+                            checked={this.props.shadow}
+                            onChange={this.props.handleShadow}
+                            color="primary"
+                        />
+                        <Slider
+                            value={typeof strong === 'number' ? strong : 0}
+                            onChange={this.props.handleChangeShadowStrong}
+                            defaultValue={10}
+                            // getAriaValueText={valuetext}
+                            aria-labelledby="discrete-slider"
+                            valueLabelDisplay="auto"
+                            step={5}
+                            marks
+                            min={5}
+                            max={25}
+                            style={{ width: '100px', margin: 'auto 20px 0' }}
+                        />
+                    </div>
                 </div>
             </div>
         )

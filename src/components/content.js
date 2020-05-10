@@ -58,16 +58,42 @@ export default class Content extends React.Component {
         this.offsetY = this.canvas.current.getBoundingClientRect().top
     }
     componentDidUpdate(prevProps, prevState) {
-        const { lineType, lineWidth, corner, strokeColor, fillColor, shadow } = this.props
+        const { lineType, lineWidth, corner, strokeColor, fillColor, shadow, strong } = this.props
         if (this.props.activeItem === "Move") {
-            if (lineType != prevProps.lineType || lineWidth != prevProps.lineWidth || corner != prevProps.corner ||
-                strokeColor != prevProps.strokeColor || fillColor != prevProps.fillColor || shadow != prevProps.shadow) {
+            let prop = null, value = null
+            if (lineType != prevProps.lineType) {
+                prop = 'dashed'
+                value = lineType
+            }
+            else if (lineWidth != prevProps.lineWidth) {
+                prop = 'weight'
+                value = lineWidth
+            }
+            else if (corner != prevProps.corner) {
+                prop = 'corner'
+                value = corner
+            } else if (strokeColor != prevProps.strokeColor) {
+                prop = 'stroke'
+                value = strokeColor
+            } else if (fillColor != prevProps.fillColor) {
+                prop = 'fill'
+                value = fillColor
+            }
+            else if (shadow != prevProps.shadow) {
+                prop = 'shadow'
+                value = shadow
+            }
+            else if (strong != prevProps.strong) {
+                prop = 'strong'
+                value = strong
+            }
+            if (prop) {
                 this.state.layouts.forEach(l => {
-                    this.state.refs[l[0]].current.updateStyle(lineType, lineWidth, corner, strokeColor, fillColor, shadow).then(
+                    this.state.refs[l[0]].current.updateStyle(prop, value).then(
                         this.snapshot())
                 })
                 this.state.guids.forEach(g => {
-                    this.state.refs[g.id].current.updateStyle(lineType, lineWidth, corner, strokeColor, fillColor, shadow).then(
+                    this.state.refs[g.id].current.updateStyle(prop, value).then(
                         this.snapshot())
                 })
             }
