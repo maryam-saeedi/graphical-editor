@@ -16,6 +16,7 @@ class Text extends React.Component {
         this.handleMouseDown = this.handleMouseDown.bind(this)
         this.handleMouseMove = this.handleMouseMove.bind(this)
         this.handleMouseUp = this.handleMouseUp.bind(this)
+        this.handleDoubleClick = this.handleDoubleClick.bind(this)
     }
 
     handleText(e) {
@@ -42,11 +43,20 @@ class Text extends React.Component {
     handleMouseUp() {
         this.isMoving = false
     }
+
+    handleLogic(logic) {
+        this.logic = logic
+        console.log(this.logic)
+    }
+    handleDoubleClick(e) {
+        this.props.addLogic(this.props.id, this.logic)
+    }
+
     render() {
         const { x, y, edit, text } = this.state
         const { weight, color } = this.props
         return (
-            <g>
+            <g onDoubleClick={this.handleDoubleClick}>
                 <text x={x} y={y} font-size={2 * (weight - 1) + 10} fill={color} onMouseDown={this.handleMouseDown} onMouseMove={this.handleMouseMove} onMouseUp={this.handleMouseUp}>{text}</text>
                 {edit && <foreignObject x={x - 5} y={y - 21} width="100" height="30">
 

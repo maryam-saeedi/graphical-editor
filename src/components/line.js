@@ -20,6 +20,7 @@ class Line extends React.Component {
         this.handleCanvasUp = this.handleCanvasUp.bind(this)
         this.handleMove = this.handleMove.bind(this)
         this.handleMoving = this.handleMoving.bind(this)
+        this.handleDoubleClick = this.handleDoubleClick.bind(this)
     }
 
     componentDidMount() {
@@ -32,6 +33,8 @@ class Line extends React.Component {
         this.setState({ path })
     }
     handleClick(e) {
+        if (e.detail == 2)
+            return
         this.setState({ layout: true })
         e.preventDefault()
         e.stopPropagation()
@@ -87,10 +90,10 @@ class Line extends React.Component {
         this.props.updateLayout(this.props.id, points, [])
         this.setState({ points, path })
     }
-    handleCanvasMove(e, idx) {
+    handleCanvasMove(dx, dy, idx) {
         let { points, path } = this.state
         // if (this.isAdding) {
-        points.splice(idx, 1, [e.clientX, e.clientY - 64])
+        points.splice(idx, 1, [points[idx][0] + dx, points[idx][1] + dy])
         if (idx === points.length - 1 || idx === 0) {
             path.splice(idx, 1, [idx == 0 ? "M" : "L"].concat(points[idx]))
         } else {
@@ -143,14 +146,29 @@ class Line extends React.Component {
             self.props.updateLayout(self.props.id, points, inter)
         }
     }
+    handleLogic(logic) {
+        this.logic = logic
+        console.log(this.logic)
+    }
+    handleDoubleClick(e) {
+        console.log(('double cliked'), e.detail)
+        this.props.addLogic(this.props.id, this.logic)
+    }
+    handleRightClick(e) {
+        console.log('right clikc')
+        e.preventDefault()
+    }
     render() {
         const { points, layout, path } = this.state
         const { arrow, stroke, weight, dashed, corner, shadow, strong } = this.state
 
+        const logic = this.logic
         let inter = []
         const angle = Math.atan2(points[points.length - 1][1] - points[points.length - 2][1], points[points.length - 1][0] - points[points.length - 2][0])
         return (
             <g onClick={this.handleClick}
+                onDoubleClick={this.handleDoubleClick}
+                onContextMenu={this.handleRightClick}
                 //  onMouseMove={this.handleCanvasMove} 
                 onMouseDown={this.handleCanvasDown} onMouseUp={this.handleCanvasUp}>
                 <filter id="shadow" x="-50%" y="-50%" height="200%" width="200%">
@@ -167,7 +185,7 @@ class Line extends React.Component {
                         inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] });
                     }
                     let tmp = [...p]
-                    if (i > 0 && i < path.length - 1) {
+                    if (corner == "round" && i > 0 && i < path.length - 1) {
                         const ang1 = Math.atan2(points[i][1] - points[i - 1][1], points[i][0] - points[i - 1][0])
                         const ang2 = Math.atan2(points[i + 1][1] - points[i][1], points[i + 1][0] - points[i][0])
                         round = ["Q", points[i][0], points[i][1], points[i][0] + 10 * Math.cos(ang2), points[i][1] + 10 * Math.sin(ang2)]
@@ -175,7 +193,7 @@ class Line extends React.Component {
                     }
                     return tmp.concat(round).join(" ")
                 }).join(" ")}
-                    fill="none" stroke={stroke} stroke-width={weight} strokeLinecap={corner} strokeLinejoin={corner}
+                    fill="none" stroke="var(--logic, black)" stroke-width={weight} strokeLinecap="round" strokeLinejoin="round"
                     stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`}
                     filter={shadow ? "url(#shadow)" : ""} />
                 {arrow && <path d={`M${points[points.length - 1].join(" ")} L${points[points.length - 1][0] - 7 * Math.cos(angle - Math.PI / 8)} ${points[points.length - 1][1] - 7 * Math.sin(angle - Math.PI / 8)} L${points[points.length - 1][0] - 7 * Math.cos(angle + Math.PI / 8)} ${points[points.length - 1][1] - 7 * Math.sin(angle + Math.PI / 8)} Z`} fill={stroke} stroke={stroke} stroke-width={weight} />}

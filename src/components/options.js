@@ -11,6 +11,8 @@ import FormLabel from '@material-ui/core/FormLabel';
 import lineTypeIcon from "../images/line_style.svg"
 import lineWeight from "../images/line.svg";
 import cornerTypeIcon from "../images/corner.svg"
+import zoomin from "../images/zoom-in.svg"
+import zoomout from "../images/zoom-out.svg"
 
 const Button = props => {
     const style = {
@@ -34,7 +36,7 @@ export default class Options extends React.Component {
     }
 
     render() {
-        const { corner, lineType, lineWidth, strong } = this.props
+        const { corner, lineType, lineWidth, strong, zoom } = this.props
         return (
             <div style={{ display: 'flex', flexDirection: 'row', height: '50px' }}>
                 <div style={{ display: "flex", alignItems: 'center' }}>
@@ -44,7 +46,7 @@ export default class Options extends React.Component {
                         id="demo-simple-select-helper"
                         value={corner}
                         onChange={this.props.handleChangeCorner}
-                        style={{ width: '100px', margin: '0 20px' }}
+                        style={{ width: '100px', margin: '0 20px 0 10px' }}
                     >
                         <MenuItem value={'round'}>Round</MenuItem>
                         <MenuItem value={'unset'}>Square</MenuItem>
@@ -57,7 +59,7 @@ export default class Options extends React.Component {
                         id="demo-simple-select-helper"
                         value={lineType}
                         onChange={this.props.handleChangeLineType}
-                        style={{ width: '100px', margin: '0 20px' }}
+                        style={{ width: '100px', margin: '0 20px 0 10px' }}
                     >
                         <MenuItem value={0}>Solid</MenuItem>
                         <MenuItem value={10}>Dashed</MenuItem>
@@ -77,7 +79,7 @@ export default class Options extends React.Component {
                         marks
                         min={1}
                         max={10}
-                        style={{ width: '100px', margin: 'auto 20px 0' }}
+                        style={{ width: '100px', margin: 'auto 20px 0 10px' }}
                     />
                     {/* <Input
                         value={lineWidth}
@@ -95,7 +97,7 @@ export default class Options extends React.Component {
                 </div>
                 <div>
                     <FormLabel component="legend">Shadow</FormLabel>
-                    <div style={{display: 'flex'}}>
+                    <div style={{ display: 'flex' }}>
                         <Checkbox
                             checked={this.props.shadow}
                             onChange={this.props.handleShadow}
@@ -112,9 +114,21 @@ export default class Options extends React.Component {
                             marks
                             min={5}
                             max={25}
-                            style={{ width: '100px', margin: 'auto 20px 0' }}
+                            style={{ width: '100px', margin: 'auto 20px 0 10px' }}
                         />
                     </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: zoomin }} />
+                    <Slider
+                        value={zoom}
+                        min={0.5}
+                        max={2}
+                        step={0.1}
+                        onChange={this.props.handleChangeZoom}
+                        aria-labelledby="continuous-slider"
+                        style={{ width: '100px' }} />
+                    <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: zoomout }} />
                 </div>
             </div>
         )

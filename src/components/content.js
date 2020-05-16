@@ -2,6 +2,11 @@ import React from 'react'
 
 import { serialize } from 'react-serialize'
 
+import DialogTitle from '@material-ui/core/DialogTitle';
+import Dialog from '@material-ui/core/Dialog';
+import TextField from '@material-ui/core/TextField';
+import Button from '@material-ui/core/Button';
+
 import MenuBar from './menu-bar';
 import Shape from "./shape"
 import Line from "./line"
@@ -23,7 +28,8 @@ export default class Content extends React.Component {
             input: false,
             click: false,
             count: 0,
-            refs: {}
+            refs: {},
+            open: false
         }
 
         this.canvas = React.createRef()
@@ -40,6 +46,9 @@ export default class Content extends React.Component {
         this.handleOpen = this.handleOpen.bind(this)
         this.handleUndo = this.handleUndo.bind(this)
         this.handleRedo = this.handleRedo.bind(this)
+        this.handleClose = this.handleClose.bind(this)
+        this.handleAddLogic = this.handleAddLogic.bind(this)
+        this.applyLogic = this.applyLogic.bind(this)
 
         this.menubarItems = [
             // { name: "Open", image: open, func: this.handleOpen },
@@ -51,14 +60,19 @@ export default class Content extends React.Component {
         this.item = {}
         this.history = { el: [[]], ref: [[]] }
         this.currentState = 0
+        this.offsetW = "100%"
+        this.offsetH = "100%"
     }
 
     componentDidMount() {
         this.offsetX = this.canvas.current.getBoundingClientRect().left
         this.offsetY = this.canvas.current.getBoundingClientRect().top
+        this.offsetW = this.canvas.current.getBoundingClientRect().width
+        this.offsetH = this.canvas.current.getBoundingClientRect().height
+        console.log(this.canvas.current.getBoundingClientRect())
     }
     componentDidUpdate(prevProps, prevState) {
-        const { lineType, lineWidth, corner, strokeColor, fillColor, shadow, strong } = this.props
+        const { lineType, lineWidth, cornerType, strokeColor, fillColor, shadow, strong } = this.props
         if (this.props.activeItem === "Move") {
             let prop = null, value = null
             if (lineType != prevProps.lineType) {
@@ -69,9 +83,9 @@ export default class Content extends React.Component {
                 prop = 'weight'
                 value = lineWidth
             }
-            else if (corner != prevProps.corner) {
+            else if (cornerType != prevProps.cornerType) {
                 prop = 'corner'
-                value = corner
+                value = cornerType
             } else if (strokeColor != prevProps.strokeColor) {
                 prop = 'stroke'
                 value = strokeColor
@@ -101,8 +115,9 @@ export default class Content extends React.Component {
     }
 
     handleMouseMove(e) {
+        const scale = this.props.zoom
         if (this.isDrawing) {
-            this.state.refs[this.currentItem].current.handleMoving(0, 0, e.movementX, e.movementY)
+            this.state.refs[this.currentItem].current.handleMoving(0, 0, scale * e.movementX, scale * e.movementY)
         }
         if (this.isResizing) {
             this.setState({
@@ -129,15 +144,15 @@ export default class Content extends React.Component {
                             dx = e.movementX
                             dy = e.movementY
                         }
-                        this.state.refs[l[0]].current.handleMoving(dx, dy, dw, dh)
-                        return [l[0], l[1] + dx, l[2] + dy, l[3] + dw, l[4] + dh]
+                        this.state.refs[l[0]].current.handleMoving(scale * dx, scale * dy, scale * dw, scale * dh)
+                        return [l[0], l[1] + scale * dx, l[2] + scale * dy, l[3] + scale * dw, l[4] + scale * dh]
                     }
                     return l
                 })
             })
         }
         if (this.isLining) {
-            this.state.refs[this.line].current.handleCanvasMove(e, this.anchor)
+            this.state.refs[this.line].current.handleCanvasMove(scale * e.movementX, scale * e.movementY, this.anchor)
         }
     }
     handleBoundingMouseDown(corner, bb) {
@@ -162,12 +177,12 @@ export default class Content extends React.Component {
     }
     handleClickInside(id, e, x, y, w, h) {
         if (this.props.activeItem === "Move") {
-            console.log('move', id)
             this.setState({ layouts: [...this.state.layouts, [id, x, y, w, h]] })
         }
         else if (this.props.activeItem === "Erase") {
-            console.log('erase', id)
-            this.setState({ elements: this.state.elements.filter(e => e.id != id) })
+            const { refs } = this.state
+            delete refs[id]
+            this.setState({ elements: this.state.elements.filter(e => e.id != id), refs }, () => this.snapshot())
         }
         else if (this.props.activeItem == "Copy") {
             const { elements, refs, count } = this.state
@@ -225,20 +240,33 @@ export default class Content extends React.Component {
                 }]
             })
         } else if (this.props.activeItem === "Erase") {
-            this.setState({ elements: this.state.elements.filter(e => e.id != id) })
+            const { refs } = this.state
+            delete refs[id]
+            this.setState({ elements: this.state.elements.filter(e => e.id != id), refs })
         }
     }
 
+    applyLogic() {
+        this.state.refs[this.logicTarget].current.handleLogic(this.logic)
+        this.handleClose()
+    }
+    handleAddLogic(id, logic) {
+        this.logic = logic
+        this.logicTarget = id
+        this.setState({ open: true })
+    }
     handleClick(e) {
         const { refs } = this.state
-        const { activeItem } = this.props
+        const { activeItem, zoom } = this.props
+        const scale = zoom
         let element = null
         this.item = {}
         this.setState({ layouts: [], guids: [] })
 
         if (activeItem === "Text") {
             const ref = React.createRef()
-            element = <Text x={e.clientX - this.offsetX} y={e.clientY - this.offsetY} text="text" weight={this.props.lineWidth} color={this.props.strokeColor} ref={ref} id={this.state.count} />
+            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} text="text" weight={this.props.lineWidth} color={this.props.strokeColor} ref={ref} id={this.state.count}
+                addLogic={this.handleAddLogic} />
             if (element) {
                 refs[this.state.count] = ref
                 this.setState({
@@ -252,21 +280,24 @@ export default class Content extends React.Component {
     }
     handleMouseDown(e) {
         const { refs } = this.state
-        const { activeItem } = this.props
+        const { activeItem, zoom } = this.props
         const ref = React.createRef()
+        const scale = zoom
         let element = null
-        if (activeItem === "Move" || activeItem === "Text")
+        if (activeItem === "Move" || activeItem === "Text" || activeItem === "Erase" || activeItem === "Copy")
             return
         if (activeItem === "Line" || activeItem === "Arrow" || activeItem === "Bridge")
-            element = <Line points={[[e.clientX - this.offsetX, e.clientY - this.offsetY], [e.clientX - this.offsetX, e.clientY - this.offsetY]]} arrow={activeItem == "Arrow"} stroke={this.props.strokeColor} weight={this.props.lineWidth} dashed={this.props.lineType} key={this.state.count} handleAddLineGuid={this.handleAddLineGuid} id={this.state.count}
+            element = <Line points={[[scale * (e.clientX - this.offsetX), scale * (e.clientY - this.offsetY)], [scale * (e.clientX - this.offsetX), scale * (e.clientY - this.offsetY)]]} arrow={activeItem == "Arrow"} stroke={this.props.strokeColor} weight={this.props.lineWidth} dashed={this.props.lineType} key={this.state.count} handleAddLineGuid={this.handleAddLineGuid} id={this.state.count}
                 path={[]}
                 shadow={this.props.shadow}
                 corner={this.props.cornerType}
                 ref={ref}
-                updateLayout={this.updateLayout} />
+                updateLayout={this.updateLayout}
+                addLogic={this.handleAddLogic}
+            />
         else if (activeItem === "Rectangle" || activeItem === "Circle" || activeItem === "Ellipse") {
-            element = <Shape x={e.clientX - this.offsetX} y={e.clientY - this.offsetY} w={0} h={0} shape={activeItem} stroke={this.props.strokeColor} fill={this.props.fillColor} dashed={this.props.lineType} weight={this.props.lineWidth} earase={this.state.earase} click={this.state.click}
-                // key={this.state.count}
+            element = <Shape x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} stroke={this.props.strokeColor} fill={this.props.fillColor} dashed={this.props.lineType} weight={this.props.lineWidth} earase={this.state.earase} click={this.state.click}
+                key={this.state.count}
                 corner={this.props.cornerType}
                 shadow={this.props.shadow}
                 clickInside={this.handleClickInside}
@@ -274,7 +305,7 @@ export default class Content extends React.Component {
                 ref={ref}
             />
         } else if (activeItem === "Image")
-            element = <Shape src={URL.createObjectURL(this.props.file[0])} x={e.clientX - this.offsetX} y={e.clientY - this.offsetY} w={0} h={0} shape={activeItem} key={this.state.count}
+            element = <Shape src={URL.createObjectURL(this.props.file[0])} x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} key={this.state.count}
                 clickInside={this.handleClickInside}
                 id={this.state.count}
                 ref={ref}
@@ -294,7 +325,7 @@ export default class Content extends React.Component {
         const { activeItem } = this.props
         let element = null
 
-        if (this.isDrawing || this.isLining) {
+        if (this.isDrawing || this.isResizing || this.isLining) {
             this.snapshot()
         }
         this.isDrawing = false
@@ -319,6 +350,7 @@ export default class Content extends React.Component {
         }))
         this.history.ref.push(this.state.refs)
         this.currentState++
+        // console.log(this.history.el, this.state.elements.length)
     }
     handleSave() {
         var svg = this.canvas.current
@@ -364,22 +396,28 @@ export default class Content extends React.Component {
             () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
     }
 
+    handleClose() {
+        this.setState({ open: false })
+    }
     render() {
-        const { elements, layouts, guids } = this.state
-        // console.log(elements)
+        const { elements, layouts, guids, open } = this.state
+        // console.log(elements, this.state.refs)
         return (
             <div
-                style={{ width: '100%', height: '100%', background: '#e5f5ee', backgroundImage: "url('src/images/grid.png')", backgroundSize: "200px 200px", display: 'flex' }}
+                style={{ flex: 1, background: '#e5f5ee', backgroundImage: "url('src/images/grid.png')", backgroundSize: "200px 200px", display: 'flex', overflow: 'auto' }}
             >
                 <MenuBar items={this.menubarItems} />
                 <input type="file" id="fileInput" ref="fileUploader" onChange={this.onLoad} style={{ display: "none" }} />
                 <div
-                    style={{ width: '100%', height: '100%' }}
+                    // style={{ flex: 1 }}
+                    style={{ width: '100%', height: '100%', overflow: 'auto' }}
                 // dangerouslySetInnerHTML={{ __html: '<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><g><g><rect x="336" y="149" width="95" height="68" stroke="black" stroke-width="3" fill="transparent"/></g></g><g/><g/></svg>' }}
                 >
                     <svg
+                        viewBox={`0 0 ${this.props.zoom * (this.offsetW)} ${this.props.zoom * (this.offsetH)}`}
                         ref={this.canvas}
-                        width="100%" height="100%"
+                        width={this.offsetW} height={this.offsetH}
+                        style={{ display: 'block' }}
                         onClick={this.handleClick}
                         onMouseDown={this.handleMouseDown}
                         onMouseUp={this.handleMouseUp}
@@ -396,6 +434,14 @@ export default class Content extends React.Component {
                         </g>
                     </svg>
                 </div>
+                <Dialog onClose={this.handleClose} aria-labelledby="simple-dialog-title" open={open}>
+                    <DialogTitle id="simple-dialog-title">Add Logic Vaiable to Element</DialogTitle>
+                    <TextField id="standard-basic" label="data variable name" onChange={e => this.logic = e.target.value} value={this.logic} style={{ margin: '10px 50px' }} />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', padding: "10px 30px" }}>
+                        <Button onClick={this.handleClose}>skip</Button>
+                        <Button onClick={this.applyLogic}>Apply</Button>
+                    </div>
+                </Dialog>
             </div>
         )
     }
