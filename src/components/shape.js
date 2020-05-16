@@ -8,6 +8,7 @@ class Shape extends React.Component {
             y: this.props.y,
             w: this.props.shape === "Circle" ? Math.max(this.props.w, this.props.h) : this.props.w,
             h: this.props.shape === "Circle" ? Math.max(this.props.w, this.props.h) : this.props.h,
+            src: this.props.src,
             shape: this.props.shape,
             weight: this.props.weight,
             stroke: this.props.stroke,
@@ -54,7 +55,7 @@ class Shape extends React.Component {
                         : <ellipse cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} stroke={stroke} stroke-width={weight} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} fill={fill} filter={shadow ? "url(#shadow2)" : ""} />))
         { if (this.state.erase) return null }
         return (
-            <g onClick={this.handleClick} >
+            <g onClick={this.handleClick} element='Shape' props={JSON.stringify(this.state)}>
                 <defs>
                     <filter id="shadow2" x="-50%" y="-50%" width="200%" height="200%">
                         <feGaussianBlur in="SourceAlpha" stdDeviation={strong} result="blur" />

@@ -1,4 +1,5 @@
 import React from 'react'
+import ReactHtmlParser, { processNodes, convertNodeToElement, htmlparser2 } from 'react-html-parser';
 
 import { serialize } from 'react-serialize'
 
@@ -49,9 +50,11 @@ export default class Content extends React.Component {
         this.handleClose = this.handleClose.bind(this)
         this.handleAddLogic = this.handleAddLogic.bind(this)
         this.applyLogic = this.applyLogic.bind(this)
+        this.onLoad = this.onLoad.bind(this)
+        this.transformation = this.transformation.bind(this)
 
         this.menubarItems = [
-            // { name: "Open", image: open, func: this.handleOpen },
+            { name: "Open", image: open, func: this.handleOpen },
             { name: "Save", image: save, func: this.handleSave },
             { name: "Undo", image: undo, func: this.handleUndo },
             { name: "Redo", image: redo, func: this.handleRedo }
@@ -375,11 +378,43 @@ export default class Content extends React.Component {
     handleOpen() {
         this.refs.fileUploader.click();
     }
+    transformation(node, index) {
+        if (node.name === 'g' && node.attribs.element) {
+            const { refs, count } = this.state
+            const ref = React.createRef()
+            let element = null
+            refs[count] = ref
+            let props = JSON.parse(node.attribs.props)
+            props['id'] = count
+            props['key'] = count
+            props['ref'] = ref
+            if (node.attribs.element === "Shape") {
+                props['clickInside'] = this.handleClickInside
+                element = React.createElement(Shape, props)
+            } else if (node.attribs.element === "Line") {
+                props['handleAddLineGuid'] = this.handleAddLineGuid
+                props['updateLayout'] = this.updateLayout
+                element = React.createElement(Line, props)
+            } else if (node.attribs.element === "Text") {
+                element = React.createElement(Text, props)
+            }
+            this.setState({ elements: [...this.state.elements, { id: this.state.count, e: element }], refs, count: this.state.count + 1 })
+        }
+    }
     onLoad(e) {
         var file = e.target.files[0];
         var reader = new FileReader();
+        this.setState({ elements: [], refs: {}, count: 0 })
+
+        const self = this
         reader.onload = function (e) {
             var content = reader.result;
+            content = content.replace('xmlns="http://www.w3.org/2000/svg"', "");
+            content = content.replace('xmlns:xlink="http://www.w3.org/1999/xlink"', "");
+            content = content.replace(/^<\?xml[^>]*>/, "")
+            // console.log(content)
+            const canvas = ReactHtmlParser(content, { transform: self.transformation })
+            // console.log(canvas)
         }
         reader.readAsText(file);
     }
@@ -401,7 +436,7 @@ export default class Content extends React.Component {
     }
     render() {
         const { elements, layouts, guids, open } = this.state
-        // console.log(elements, this.state.refs)
+        // console.log(elements)
         return (
             <div
                 style={{ flex: 1, background: '#e5f5ee', backgroundImage: "url('src/images/grid.png')", backgroundSize: "200px 200px", display: 'flex', overflow: 'auto' }}

@@ -166,7 +166,9 @@ class Line extends React.Component {
         let inter = []
         const angle = Math.atan2(points[points.length - 1][1] - points[points.length - 2][1], points[points.length - 1][0] - points[points.length - 2][0])
         return (
-            <g onClick={this.handleClick}
+            <g
+                element='Line' props={JSON.stringify(this.state)}
+                onClick={this.handleClick}
                 onDoubleClick={this.handleDoubleClick}
                 onContextMenu={this.handleRightClick}
                 //  onMouseMove={this.handleCanvasMove} 

@@ -56,7 +56,7 @@ class Text extends React.Component {
         const { x, y, edit, text } = this.state
         const { weight, color } = this.props
         return (
-            <g onDoubleClick={this.handleDoubleClick}>
+            <g onDoubleClick={this.handleDoubleClick} element='Text' props={JSON.stringify(this.state)}>
                 <text x={x} y={y} font-size={2 * (weight - 1) + 10} fill={color} onMouseDown={this.handleMouseDown} onMouseMove={this.handleMouseMove} onMouseUp={this.handleMouseUp}>{text}</text>
                 {edit && <foreignObject x={x - 5} y={y - 21} width="100" height="30">
 
