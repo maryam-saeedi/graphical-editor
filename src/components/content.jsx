@@ -18,19 +18,21 @@ import open from "../images/new.svg"
 import save from "../images/save.svg"
 import undo from "../images/undo.svg"
 import redo from "../images/redo.svg"
+import { ContentAdd } from 'material-ui/svg-icons';
 
 export default class Content extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
             elements: [],
-            layouts: [],
-            guids: [],
+            boundingBox: {},
             input: false,
             click: false,
             count: 0,
             refs: {},
-            open: false
+            open: false,
+            positionX: null,
+            positionY: null,
         }
 
         this.canvas = React.createRef()
@@ -41,9 +43,6 @@ export default class Content extends React.Component {
         this.handleMouseUp = this.handleMouseUp.bind(this)
         this.handleSave = this.handleSave.bind(this)
         this.handleClickInside = this.handleClickInside.bind(this)
-        this.setBoundry = this.setBoundry.bind(this)
-        this.handleAddLineGuid = this.handleAddLineGuid.bind(this)
-        this.updateLayout = this.updateLayout.bind(this)
         this.handleOpen = this.handleOpen.bind(this)
         this.handleUndo = this.handleUndo.bind(this)
         this.handleRedo = this.handleRedo.bind(this)
@@ -52,6 +51,8 @@ export default class Content extends React.Component {
         this.applyLogic = this.applyLogic.bind(this)
         this.onLoad = this.onLoad.bind(this)
         this.transformation = this.transformation.bind(this)
+        this.handleBoundryClick = this.handleBoundryClick.bind(this)
+        this.handleLayoutUpdate = this.handleLayoutUpdate.bind(this)
 
         this.menubarItems = [
             { name: "Open", image: open, func: this.handleOpen },
@@ -65,6 +66,8 @@ export default class Content extends React.Component {
         this.currentState = 0
         this.offsetW = "100%"
         this.offsetH = "100%"
+        this.move = null
+        this.selected = []
     }
 
     componentDidMount() {
@@ -72,7 +75,6 @@ export default class Content extends React.Component {
         this.offsetY = this.canvas.current.getBoundingClientRect().top
         this.offsetW = this.canvas.current.getBoundingClientRect().width
         this.offsetH = this.canvas.current.getBoundingClientRect().height
-        console.log(this.canvas.current.getBoundingClientRect())
     }
     componentDidUpdate(prevProps, prevState) {
         const { lineType, lineWidth, cornerType, strokeColor, fillColor, shadow, strong } = this.props
@@ -105,82 +107,32 @@ export default class Content extends React.Component {
                 value = strong
             }
             if (prop) {
-                this.state.layouts.forEach(l => {
-                    this.state.refs[l[0]].current.updateStyle(prop, value).then(
-                        this.snapshot())
-                })
-                this.state.guids.forEach(g => {
-                    this.state.refs[g.id].current.updateStyle(prop, value).then(
-                        this.snapshot())
+                this.selected.forEach(s => {
+                    this.state.refs[s].current.updateStyle(prop, value).then(this.snapshot())
                 })
             }
         }
     }
 
     handleMouseMove(e) {
+        this.setState({ positionX: e.clientX - this.offsetX, positionY: e.clientY - this.offsetY })
+
         const scale = this.props.zoom
+        if (this.resizedItem != undefined) {
+            // this.state.refs[this.resizedItem].current.move(scale * e.movementX, scale * e.movementY)
+            this.selected.forEach(s => this.state.refs[s].current.move(scale * e.movementX, scale * e.movementY))
+        }
         if (this.isDrawing) {
             this.state.refs[this.currentItem].current.handleMoving(0, 0, scale * e.movementX, scale * e.movementY)
         }
-        if (this.isResizing) {
-            this.setState({
-                layouts: this.state.layouts.map(l => {
-                    if (l[0] in this.item) {
-                        let dx = 0, dy = 0, dw = 0, dh = 0
-                        if (this.corner === 1) {
-                            dx = e.movementX
-                            dy = e.movementY
-                            dw = - e.movementX
-                            dh = - e.movementY
-                        } else if (this.corner === 2) {
-                            dx = e.movementX
-                            dw = - e.movementX
-                            dh = e.movementY
-                        } else if (this.corner === 3) {
-                            dy = e.movementY
-                            dw = e.movementX
-                            dh = - e.movementY
-                        } else if (this.corner === 4) {
-                            dw = e.movementX
-                            dh = e.movementY
-                        } else {
-                            dx = e.movementX
-                            dy = e.movementY
-                        }
-                        this.state.refs[l[0]].current.handleMoving(scale * dx, scale * dy, scale * dw, scale * dh)
-                        return [l[0], l[1] + scale * dx, l[2] + scale * dy, l[3] + scale * dw, l[4] + scale * dh]
-                    }
-                    return l
-                })
-            })
-        }
-        if (this.isLining) {
-            this.state.refs[this.line].current.handleCanvasMove(scale * e.movementX, scale * e.movementY, this.anchor)
-        }
     }
-    handleBoundingMouseDown(corner, bb) {
-        const self = this
-        return function (e) {
-            self.isResizing = true
-            self.corner = corner
-            self.item[bb[0]] = { x: bb[1], y: bb[2], w: bb[3], h: bb[4] }
-        }
+    handleBoundryClick(id) {
+        this.resizedItem = id
     }
-    setBoundry(layout) {
-        const [id, x, y, w, h] = layout
-        return (
-            <g onClick={e => e.stopPropagation()}>
-                <rect x={x - 2} y={y - 2} width={w + 4} height={h + 4} stroke='gray' stroke-dasharray="5 5" fill='transparent' onMouseDown={this.handleBoundingMouseDown(0, layout)} /> ,
-                <circle cx={x - 5} cy={y - 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(1, layout)} /> ,
-                <circle cx={x - 5} cy={y + h + 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(2, layout)} /> ,
-                <circle cx={x + w + 5} cy={y - 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(3, layout)} /> ,
-                <circle cx={x + w + 5} cy={y + h + 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(4, layout)} />
-            </g >
-        )
-    }
-    handleClickInside(id, e, x, y, w, h) {
+    handleClickInside(id, ctrl = false) {
         if (this.props.activeItem === "Move") {
-            this.setState({ layouts: [...this.state.layouts, [id, x, y, w, h]] })
+            this.setState({ boundingBox: { ...this.state.boundingBox, [id]: this.state.refs[id].current.setBoundry() } })
+            this.selected = [...this.selected, id]
         }
         else if (this.props.activeItem === "Erase") {
             const { refs } = this.state
@@ -190,62 +142,9 @@ export default class Content extends React.Component {
         else if (this.props.activeItem == "Copy") {
             const { elements, refs, count } = this.state
             const ref = React.createRef()
-            const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { x: 10, y: 10, w: refs[id].current.state.w, h: refs[id].current.state.h, id: count, ref: ref, key: count })
+            const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { ...refs[id].current.state, x: 10, y: 10, id: count, ref: ref, key: count })
             refs[count] = ref
             this.setState({ elements: [...this.state.elements, { id: count, e: newE }], refs, count: count + 1 })
-        }
-    }
-
-    updateLayout(id, points, inter) {
-        const { refs } = this.state
-        this.setState({
-            guids: this.state.guids.map(g => {
-                if (g.id == id) {
-                    g.p = points.map((p, i) =>
-                        <circle cx={p[0]} cy={p[1]} r="3" fill="gray" onMouseDown={this.handleMoveLineAnchor(i, g.id)} />
-                    )
-                    g.i = inter.flatMap((p, i) =>
-                        [<circle cx={p.p[0]} cy={p.p[1]} r="3" fill="lightblue" stroke="gray" onMouseDown={e => refs[id].current.handleAddAnchor(e, p.id)} />,
-                        <circle cx={p.p[0]} cy={p.p[1] - 10} r="3" fill="yellow" stroke="gray" onClick={refs[id].current.addBridge(p.id)} />]
-                    )
-                }
-                return g
-            }
-            )
-        })
-    }
-    handleMoveLineAnchor(idx, line) {
-        const self = this
-        return function (e) {
-            self.line = line
-            self.anchor = idx
-            self.isLining = true
-        }
-    }
-    remoteFunction(f) {
-        const self = this
-        return function () {
-            f()
-            self.snapshot()
-        }
-    }
-    handleAddLineGuid(id, points, inter, e, handleMove, click) {
-        if (this.props.activeItem === "Move") {
-            this.setState({
-                guids: [...this.state.guids, {
-                    "id": id, 'p': points.map((p, i) =>
-                        <circle cx={p[0]} cy={p[1]} r="3" fill="gray" onMouseDown={this.handleMoveLineAnchor(i, id)} />
-                    ),
-                    "i": inter.flatMap((p, i) =>
-                        [<circle cx={p.p[0]} cy={p.p[1]} r="3" fill="lightblue" stroke="gray" onMouseDown={this.remoteFunction(e.handleAddAnchor(click, p.id))} />,
-                        <circle cx={p.p[0]} cy={p.p[1] - 10} r="3" fill="yellow" stroke="gray" onClick={this.remoteFunction(e.addBridge(p.id))} />]
-                    )
-                }]
-            })
-        } else if (this.props.activeItem === "Erase") {
-            const { refs } = this.state
-            delete refs[id]
-            this.setState({ elements: this.state.elements.filter(e => e.id != id), refs })
         }
     }
 
@@ -258,17 +157,29 @@ export default class Content extends React.Component {
         this.logicTarget = id
         this.setState({ open: true })
     }
+    handleLayoutUpdate(id, layout) {
+        console.log('update', id)
+        const {boundingBox} = this.state
+        console.log(boundingBox[id])
+        boundingBox[id] = layout
+        this.setState({boundingBox})
+    }
     handleClick(e) {
         const { refs } = this.state
         const { activeItem, zoom } = this.props
         const scale = zoom
         let element = null
         this.item = {}
-        this.setState({ layouts: [], guids: [] })
+        this.setState({ boundingBox: {} })
+        this.selected = []
 
         if (activeItem === "Text") {
             const ref = React.createRef()
-            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} text="text" weight={this.props.lineWidth} color={this.props.strokeColor} ref={ref} id={this.state.count}
+            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} text="text" weight={this.props.lineWidth}
+                stroke={this.props.strokeColor} fill={this.props.fillColor}
+                ref={ref} id={this.state.count}
+                clickInside={this.handleClickInside}
+                handleBoundryClick={this.handleBoundryClick}
                 addLogic={this.handleAddLogic} />
             if (element) {
                 refs[this.state.count] = ref
@@ -287,16 +198,23 @@ export default class Content extends React.Component {
         const ref = React.createRef()
         const scale = zoom
         let element = null
+        this.setState({ startX: e.clientX - this.offsetX, startY: e.clientY - this.offsetY })
         if (activeItem === "Move" || activeItem === "Text" || activeItem === "Erase" || activeItem === "Copy")
             return
         if (activeItem === "Line" || activeItem === "Arrow" || activeItem === "Bridge")
-            element = <Line points={[[scale * (e.clientX - this.offsetX), scale * (e.clientY - this.offsetY)], [scale * (e.clientX - this.offsetX), scale * (e.clientY - this.offsetY)]]} arrow={activeItem == "Arrow"} stroke={this.props.strokeColor} weight={this.props.lineWidth} dashed={this.props.lineType} key={this.state.count} handleAddLineGuid={this.handleAddLineGuid} id={this.state.count}
+            element = <Line
+                points={[[scale * (e.clientX - this.offsetX), scale * (e.clientY - this.offsetY)], [scale * (e.clientX - this.offsetX), scale * (e.clientY - this.offsetY)]]}
+                arrow={activeItem == "Arrow"} stroke={this.props.strokeColor} weight={this.props.lineWidth} dashed={this.props.lineType}
+                key={this.state.count}
+                id={this.state.count}
                 path={[]}
                 shadow={this.props.shadow}
                 corner={this.props.cornerType}
                 ref={ref}
-                updateLayout={this.updateLayout}
                 addLogic={this.handleAddLogic}
+                clickInside={this.handleClickInside}
+                handleBoundryClick={this.handleBoundryClick}
+                updateLayout={this.handleLayoutUpdate}
             />
         else if (activeItem === "Rectangle" || activeItem === "Circle" || activeItem === "Ellipse") {
             element = <Shape x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} stroke={this.props.strokeColor} fill={this.props.fillColor} dashed={this.props.lineType} weight={this.props.lineWidth} earase={this.state.earase} click={this.state.click}
@@ -306,13 +224,18 @@ export default class Content extends React.Component {
                 clickInside={this.handleClickInside}
                 id={this.state.count}
                 ref={ref}
+                handleBoundryClick={this.handleBoundryClick}
+                updateLayout={this.handleLayoutUpdate}
             />
         } else if (activeItem === "Image")
             element = <Shape src={URL.createObjectURL(this.props.file[0])} x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} key={this.state.count}
                 clickInside={this.handleClickInside}
                 id={this.state.count}
                 ref={ref}
+                handleBoundryClick={this.handleBoundryClick}
+                updateLayout={this.handleLayoutUpdate}
             />
+
         this.isDrawing = true
         this.currentItem = this.state.count
         if (element) {
@@ -328,6 +251,7 @@ export default class Content extends React.Component {
         const { activeItem } = this.props
         let element = null
 
+        this.setState({ startX: null, startY: null })
         if (this.isDrawing || this.isResizing || this.isLining) {
             this.snapshot()
         }
@@ -335,11 +259,60 @@ export default class Content extends React.Component {
         this.isResizing = false
         this.isMoving = false
         this.isLining = false
+        this.resizedItem = null
 
         if (this.currentState < this.history.el.length - 1) {
             this.history.el = this.history.el.slice(0, this.currentState + 1)
             this.history.ref = this.history.ref.slice(0, this.currentState + 1)
         }
+    }
+    handleKeyDown(e) {
+        const scale = this.props.zoom
+        if (this.selected.length === 1) {
+            if (e.key === "PageUp") {
+                let { elements } = this.state
+                let target
+                elements = elements.filter(e => { if (e.id == this.selected[0]) target = e; else return true })
+                elements.push(target)
+                this.setState({ elements })
+            } else if (e.key === "PageDown") {
+                let { elements } = this.state
+                let target
+                elements = elements.filter(e => { if (e.id == this.selected[0]) target = e; else return true })
+                elements.splice(0, 0, target)
+                this.setState({ elements })
+            }
+        }
+        let dx = 0, dy = 0
+        let dir, pos
+        switch (e.key) {
+            case "Up":
+            case "ArrowUp":
+                dy = -1
+                dir = "Up"
+                pos = 0
+                break
+            case "Down":
+            case "ArrowDown":
+                dy = 1
+                dir = "Down"
+                pos = this.offsetH
+                break
+            case "Right":
+            case "ArrowRight":
+                dx = 1
+                dir = "Right"
+                pos = 0
+                break
+            case "Left":
+            case "ArrowLeft":
+                dx = -1
+                dir = "Left"
+                pos = this.offsetW
+                break
+        }
+        if (e.shiftKey) this.selected.forEach(s => this.state.refs[s].current.handleAlign(dir, pos))
+        else this.selected.forEach(s => this.state.refs[s].current.move(scale * dx, scale * dy))
     }
 
     snapshot() {
@@ -392,8 +365,6 @@ export default class Content extends React.Component {
                 props['clickInside'] = this.handleClickInside
                 element = React.createElement(Shape, props)
             } else if (node.attribs.element === "Line") {
-                props['handleAddLineGuid'] = this.handleAddLineGuid
-                props['updateLayout'] = this.updateLayout
                 element = React.createElement(Line, props)
             } else if (node.attribs.element === "Text") {
                 element = React.createElement(Text, props)
@@ -421,22 +392,23 @@ export default class Content extends React.Component {
     handleUndo() {
         if (this.currentState < 1) return
         this.currentState--
-        this.setState({ elements: [], refs: [], layouts: [], guids: [] },
+        this.setState({ elements: [], refs: [] },
             () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
     }
     handleRedo() {
         if (this.currentState > this.history.el.length - 2) return
         this.currentState++
-        this.setState({ elements: [], refs: [], layouts: [], guids: [] },
+        this.setState({ elements: [], refs: [] },
             () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
     }
 
     handleClose() {
         this.setState({ open: false })
     }
+
     render() {
-        const { elements, layouts, guids, open } = this.state
-        // console.log(elements)
+        const { elements, boundingBox, open, positionX, positionY, startX, startY } = this.state
+        // console.log(boundingBox)
         return (
             <div
                 style={{ flex: 1, background: '#e5f5ee', backgroundImage: "url('src/images/grid.png')", backgroundSize: "200px 200px", display: 'flex', overflow: 'auto' }}
@@ -445,7 +417,7 @@ export default class Content extends React.Component {
                 <input type="file" id="fileInput" ref="fileUploader" onChange={this.onLoad} style={{ display: "none" }} />
                 <div
                     // style={{ flex: 1 }}
-                    style={{ width: '100%', height: '100%', overflow: 'auto' }}
+                    style={{ width: '100%', height: '100%', overflow: 'auto', position: 'relative' }}
                 // dangerouslySetInnerHTML={{ __html: '<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><g><g><rect x="336" y="149" width="95" height="68" stroke="black" stroke-width="3" fill="transparent"/></g></g><g/><g/></svg>' }}
                 >
                     <svg
@@ -457,17 +429,20 @@ export default class Content extends React.Component {
                         onMouseDown={this.handleMouseDown}
                         onMouseUp={this.handleMouseUp}
                         onMouseMove={this.handleMouseMove}
+                        onKeyDown={e => this.handleKeyDown(e)}
+                        tabIndex={0}
                     >
                         <g>
                             {elements.map((e, idx) => e.e)}
                         </g>
                         <g>
-                            {layouts.map(l => this.setBoundry(l))}
-                        </g>
-                        <g>
-                            {guids.map(g => <g onClick={e => e.stopPropagation()} >{g.p.concat(g.i)}</g>)}
+                            {Object.values(boundingBox).map(b => b)}
                         </g>
                     </svg>
+                    <div style={{ position: 'absolute', bottom: 0, background: 'white', height: '20px', width: '100%' }}>
+                        {positionX && <span style={{ margin: '0 20px' }}>{positionX}, {positionY}px</span>}
+                        {this.isDrawing && <span style={{ margin: '0 20px' }}>{positionX - startX} &times; {positionY - startY} px</span>}
+                    </div>
                 </div>
                 <Dialog onClose={this.handleClose} aria-labelledby="simple-dialog-title" open={open}>
                     <DialogTitle id="simple-dialog-title">Add Logic Vaiable to Element</DialogTitle>

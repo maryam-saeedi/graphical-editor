@@ -21,6 +21,9 @@ class Shape extends React.Component {
         this.handleClick = this.handleClick.bind(this)
         this.handleResize = this.handleResize.bind(this)
         this.handleMoving = this.handleMoving.bind(this)
+        this.handleKeyDown = this.handleKeyDown.bind(this)
+        this.move = this.move.bind(this)
+        this.corner = 0
     }
 
     handleClick(e) {
@@ -28,7 +31,7 @@ class Shape extends React.Component {
         e.preventDefault()
         e.stopPropagation()
         this.setState({ layout: true, erase: this.props.earase })
-        this.props.clickInside(this.props.id, this, x, y, w, h)
+        this.props.clickInside(this.props.id, e.ctrlKey)
     }
 
     updateStyle(prop, value) {
@@ -41,8 +44,76 @@ class Shape extends React.Component {
         this.setState({ x, y, w, h })
     }
 
+    handleAlign(direction, position) {
+        console.log(this.parentNode)
+        switch (direction) {
+            case "Up":
+                this.setState({ y: 0 })
+                break
+            case "Down":
+                this.setState({ y: position - this.state.h })
+                break
+            case "Right":
+                this.setState({ x: position - this.state.w })
+                break
+            case "Left":
+                this.setState({ x: 0 })
+                break
+        }
+    }
     handleMoving(dx, dy, dw = 0, dh = 0) {
         this.setState({ x: this.state.x + dx, y: this.state.y + dy, w: this.state.w + dw, h: this.state.h + dh })
+    }
+
+    handleKeyDown(e) {
+        console.log(this.props.id, e.keyCode)
+    }
+    move(movementX, movementY) {
+        let dx = 0, dy = 0, dw = 0, dh = 0
+        if (this.corner === 1) {
+            dx = movementX
+            dy = movementY
+            dw = - movementX
+            dh = - movementY
+        } else if (this.corner === 2) {
+            dx = movementX
+            dw = - movementX
+            dh = movementY
+        } else if (this.corner === 3) {
+            dy = movementY
+            dw = movementX
+            dh = - movementY
+        } else if (this.corner === 4) {
+            dw = movementX
+            dh = movementY
+        } else {
+            dx = movementX
+            dy = movementY
+        }
+        this.handleMoving(dx, dy, dw, dh)
+        this.props.updateLayout(this.props.id, this.setBoundry())
+    }
+    handleBoundingMouseDown(corner) {
+        const { id, handleBoundryClick } = this.props
+        // this.corner = 0
+        const self = this
+        return function () {
+            console.log(corner, id)
+            self.corner = corner
+            handleBoundryClick(id)
+        }
+    }
+    setBoundry() {
+        const { x, y, w, h } = this.state
+        return (
+            <g onClick={e => e.stopPropagation()}>
+                <rect x={x - 2} y={y - 2} width={w + 4} height={h + 4} stroke='gray' stroke-dasharray="5 5" fill='transparent' onMouseDown={this.handleBoundingMouseDown(0)} /> ,
+                <circle cx={x - 5} cy={y - 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(1)} /> ,
+                <circle cx={x - 5} cy={y + h + 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(2)} /> ,
+                <circle cx={x + w + 5} cy={y - 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(3)} /> ,
+                <circle cx={x + w + 5} cy={y + h + 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(4)} />
+            </g >
+        )
     }
     render() {
         const { x, y, w, h } = this.state
@@ -55,7 +126,7 @@ class Shape extends React.Component {
                         : <ellipse cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} stroke={stroke} stroke-width={weight} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} fill={fill} filter={shadow ? "url(#shadow2)" : ""} />))
         { if (this.state.erase) return null }
         return (
-            <g onClick={this.handleClick} element='Shape' props={JSON.stringify(this.state)}>
+            <g onClick={this.handleClick} onKeyDown={this.handleKeyDown} element='Shape' props={JSON.stringify(this.state)}>
                 <defs>
                     <filter id="shadow2" x="-50%" y="-50%" width="200%" height="200%">
                         <feGaussianBlur in="SourceAlpha" stdDeviation={strong} result="blur" />

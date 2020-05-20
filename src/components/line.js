@@ -16,7 +16,7 @@ class Line extends React.Component {
             strong: this.props.strong
         }
         this.handleClick = this.handleClick.bind(this)
-        this.handleCanvasMove = this.handleCanvasMove.bind(this)
+        this.move = this.move.bind(this)
         this.handleCanvasUp = this.handleCanvasUp.bind(this)
         this.handleMove = this.handleMove.bind(this)
         this.handleMoving = this.handleMoving.bind(this)
@@ -36,6 +36,7 @@ class Line extends React.Component {
         if (e.detail == 2)
             return
         this.setState({ layout: true })
+        this.anchor = -1
         e.preventDefault()
         e.stopPropagation()
         const { points } = this.state
@@ -45,11 +46,12 @@ class Line extends React.Component {
                 inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] });
             }
         })
-        this.props.handleAddLineGuid(this.props.id, this.state.points, inter, this, this.handleMove, e)
+        this.setBoundry()
+        this.props.clickInside(this.props.id)
     }
-    handleAddAnchor(e, idx) {
+    handleAddAnchor(idx) {
         const self = this
-        return function () {
+        return function (e) {
             let { points, path } = self.state
             self.isAdding = true
             self.idx = idx + 1
@@ -64,7 +66,7 @@ class Line extends React.Component {
                     inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
                 }
             })
-            self.props.updateLayout(self.props.id, points, inter)
+            self.props.updateLayout(self.props.id, self.setBoundry())
         }
     }
     updateStyle(prop, value) {
@@ -87,11 +89,12 @@ class Line extends React.Component {
         let { points, path } = this.state
         points.splice(1, 1, [points[1][0] + dx, points[1][1] + dy])
         path.splice(1, 1, ["L"].concat(points[1]))
-        this.props.updateLayout(this.props.id, points, [])
         this.setState({ points, path })
     }
-    handleCanvasMove(dx, dy, idx) {
+    move(dx, dy) {
+        console.log(this.anchor)
         let { points, path } = this.state
+        const idx = this.anchor
         // if (this.isAdding) {
         points.splice(idx, 1, [points[idx][0] + dx, points[idx][1] + dy])
         if (idx === points.length - 1 || idx === 0) {
@@ -122,7 +125,7 @@ class Line extends React.Component {
                 inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
             }
         })
-        this.props.updateLayout(this.props.id, points, inter)
+        this.props.updateLayout(this.props.id, this.setBoundry())
     }
     handleCanvasUp() {
         this.isAdding = false
@@ -130,6 +133,7 @@ class Line extends React.Component {
     addBridge(idx) {
         const self = this
         return function () {
+            console.log('bricge', idx)
             let { points, path } = self.state
             const radius = 10 + 2 * self.props.weight
             const ang = Math.atan2(points[idx + 1][1] - points[idx][1], points[idx + 1][0] - points[idx][0]);
@@ -143,7 +147,7 @@ class Line extends React.Component {
                     inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
                 }
             })
-            self.props.updateLayout(self.props.id, points, inter)
+            self.props.updateLayout(self.props.id, self.setBoundry())
         }
     }
     handleLogic(logic) {
@@ -158,6 +162,33 @@ class Line extends React.Component {
         console.log('right clikc')
         e.preventDefault()
     }
+
+    handleMoveLineAnchor(anchor) {
+        const { id, handleBoundryClick } = this.props
+
+        const self = this
+        return function () {
+            self.anchor = anchor
+            handleBoundryClick(id)
+        }
+    }
+    setBoundry() {
+        const { points, path } = this.state
+        let inter = []
+        path.map((p, i) => {
+            if (i > 0 && !p.includes("a")) {
+                inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
+            }
+        })
+        const b =
+            <g onClick={e => e.stopPropagation()}>
+                {points.map((p, i) => <circle cx={p[0]} cy={p[1]} r="3" fill="gray" onMouseDown={this.handleMoveLineAnchor(i)} />)}
+                {inter.flatMap((p, i) => [<circle cx={p.p[0]} cy={p.p[1]} r="3" fill="lightblue" stroke="gray" onMouseDown={this.handleAddAnchor(p.id)} />,
+                <circle cx={p.p[0]} cy={p.p[1] - 10} r="3" fill="yellow" stroke="gray" onClick={this.addBridge(p.id)} />])}
+            </g >
+
+        return b
+    }
     render() {
         const { points, layout, path } = this.state
         const { arrow, stroke, weight, dashed, corner, shadow, strong } = this.state
@@ -170,7 +201,7 @@ class Line extends React.Component {
                 element='Line' props={JSON.stringify(this.state)}
                 onClick={this.handleClick}
                 onDoubleClick={this.handleDoubleClick}
-                onContextMenu={this.handleRightClick}
+                // onContextMenu={this.handleRightClick}
                 //  onMouseMove={this.handleCanvasMove} 
                 onMouseDown={this.handleCanvasDown} onMouseUp={this.handleCanvasUp}>
                 <filter id="shadow" x="-50%" y="-50%" height="200%" width="200%">
