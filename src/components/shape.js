@@ -35,8 +35,9 @@ class Shape extends React.Component {
     }
 
     updateStyle(prop, value) {
+        console.log('update style')
         return new Promise((resolve, reject) => {
-            this.setState({ [prop]: value }, resolve(1))
+            this.setState({ [prop]: value }, ()=>{console.log(this.state);resolve(1)})
 
         })
     }
@@ -91,7 +92,7 @@ class Shape extends React.Component {
             dy = movementY
         }
         this.handleMoving(dx, dy, dw, dh)
-        this.props.updateLayout(this.props.id, this.setBoundry())
+        this.props.updateLayout(this.props.id, this.setBoundry(), this.state.w + dw, this.state.h + dh)
     }
     handleBoundingMouseDown(corner) {
         const { id, handleBoundryClick } = this.props

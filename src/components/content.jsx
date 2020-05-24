@@ -33,6 +33,8 @@ export default class Content extends React.Component {
             open: false,
             positionX: null,
             positionY: null,
+            objectW: 0,
+            objectH: 0,
         }
 
         this.canvas = React.createRef()
@@ -53,6 +55,7 @@ export default class Content extends React.Component {
         this.transformation = this.transformation.bind(this)
         this.handleBoundryClick = this.handleBoundryClick.bind(this)
         this.handleLayoutUpdate = this.handleLayoutUpdate.bind(this)
+        this.handleShapeChange = this.handleShapeChange.bind(this)
 
         this.menubarItems = [
             { name: "Open", image: open, func: this.handleOpen },
@@ -78,6 +81,10 @@ export default class Content extends React.Component {
     }
     componentDidUpdate(prevProps, prevState) {
         const { lineType, lineWidth, cornerType, strokeColor, fillColor, shadow, strong } = this.props
+        if (this.props.activeItem != prevProps.activeItem && (this.props.activeItem == "Erase" || this.props.activeItem == "Copy")) {
+            this.selected = []
+            this.setState({ boundingBox: {} })
+        }
         if (this.props.activeItem === "Move") {
             let prop = null, value = null
             if (lineType != prevProps.lineType) {
@@ -108,7 +115,7 @@ export default class Content extends React.Component {
             }
             if (prop) {
                 this.selected.forEach(s => {
-                    this.state.refs[s].current.updateStyle(prop, value).then(this.snapshot())
+                    this.state.refs[s].current.updateStyle(prop, value).then(res => this.snapshot())
                 })
             }
         }
@@ -124,10 +131,13 @@ export default class Content extends React.Component {
         }
         if (this.isDrawing) {
             this.state.refs[this.currentItem].current.handleMoving(0, 0, scale * e.movementX, scale * e.movementY)
+            this.setState({ objectW: e.clientX - this.offsetX - this.state.startX, objectH: e.clientY - this.state.startY - this.offsetY })
         }
     }
     handleBoundryClick(id) {
         this.resizedItem = id
+        this.isMoving = true
+        // this.setState({ startX: this.state.refs[id].state.x, startY: this.state.refd[id].state.y })
     }
     handleClickInside(id, ctrl = false) {
         if (this.props.activeItem === "Move") {
@@ -144,7 +154,8 @@ export default class Content extends React.Component {
             const ref = React.createRef()
             const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { ...refs[id].current.state, x: 10, y: 10, id: count, ref: ref, key: count })
             refs[count] = ref
-            this.setState({ elements: [...this.state.elements, { id: count, e: newE }], refs, count: count + 1 })
+            this.props.changeTool(null, "Move")
+            this.setState({ elements: [...this.state.elements, { id: count, e: newE }], refs, count: count + 1 }, () => this.handleClickInside(count))
         }
     }
 
@@ -157,12 +168,10 @@ export default class Content extends React.Component {
         this.logicTarget = id
         this.setState({ open: true })
     }
-    handleLayoutUpdate(id, layout) {
-        console.log('update', id)
-        const {boundingBox} = this.state
-        console.log(boundingBox[id])
+    handleLayoutUpdate(id, layout, w, h) {
+        const { boundingBox } = this.state
         boundingBox[id] = layout
-        this.setState({boundingBox})
+        this.setState({ boundingBox, objectW: w, objectH: h })
     }
     handleClick(e) {
         const { refs } = this.state
@@ -175,20 +184,22 @@ export default class Content extends React.Component {
 
         if (activeItem === "Text") {
             const ref = React.createRef()
-            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} text="text" weight={this.props.lineWidth}
+            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)}
+                text="" weight={this.props.lineWidth}
                 stroke={this.props.strokeColor} fill={this.props.fillColor}
-                ref={ref} id={this.state.count}
+                ref={ref} id={this.state.count} key={this.state.count}
                 clickInside={this.handleClickInside}
                 handleBoundryClick={this.handleBoundryClick}
-                addLogic={this.handleAddLogic} />
+                addLogic={this.handleAddLogic}
+                changeShape={this.handleShapeChange}
+                updateLayout={this.handleLayoutUpdate} />
             if (element) {
                 refs[this.state.count] = ref
                 this.setState({
                     elements: [...this.state.elements, { id: this.state.count, e: element }],
                     refs,
                     count: this.state.count + 1
-                },
-                    this.snapshot())
+                })
             }
         }
     }
@@ -215,6 +226,7 @@ export default class Content extends React.Component {
                 clickInside={this.handleClickInside}
                 handleBoundryClick={this.handleBoundryClick}
                 updateLayout={this.handleLayoutUpdate}
+                changeShape={this.handleShapeChange}
             />
         else if (activeItem === "Rectangle" || activeItem === "Circle" || activeItem === "Ellipse") {
             element = <Shape x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} stroke={this.props.strokeColor} fill={this.props.fillColor} dashed={this.props.lineType} weight={this.props.lineWidth} earase={this.state.earase} click={this.state.click}
@@ -252,7 +264,7 @@ export default class Content extends React.Component {
         let element = null
 
         this.setState({ startX: null, startY: null })
-        if (this.isDrawing || this.isResizing || this.isLining) {
+        if (this.isDrawing || this.isResizing || this.isLining || this.isMoving) {
             this.snapshot()
         }
         this.isDrawing = false
@@ -261,10 +273,6 @@ export default class Content extends React.Component {
         this.isLining = false
         this.resizedItem = null
 
-        if (this.currentState < this.history.el.length - 1) {
-            this.history.el = this.history.el.slice(0, this.currentState + 1)
-            this.history.ref = this.history.ref.slice(0, this.currentState + 1)
-        }
     }
     handleKeyDown(e) {
         const scale = this.props.zoom
@@ -315,13 +323,22 @@ export default class Content extends React.Component {
         else this.selected.forEach(s => this.state.refs[s].current.move(scale * dx, scale * dy))
     }
 
+    handleShapeChange() {
+        // console.log('shape change')
+        this.snapshot()
+    }
     snapshot() {
+        if (this.currentState < this.history.el.length - 1) {
+            this.history.el = this.history.el.slice(0, this.currentState + 1)
+            this.history.ref = this.history.ref.slice(0, this.currentState + 1)
+        }
         this.history.el.push(this.state.elements.map(el => {
             let newProps = {};
             Object.keys(el.e.ref.current.state).forEach(p => {
-                if (el.e.ref.current.state[p] instanceof Array) newProps[p] = [...el.e.ref.current.state[p]]
+                if (el.e.ref.current.state[p] instanceof Array) newProps[p] = JSON.parse(JSON.stringify(el.e.ref.current.state[p]))
                 else newProps[p] = el.e.ref.current.state[p]
             })
+            newProps['key'] = el.id
             return ({ id: el.id, e: React.cloneElement(el.e, newProps) })
         }))
         this.history.ref.push(this.state.refs)
@@ -392,13 +409,15 @@ export default class Content extends React.Component {
     handleUndo() {
         if (this.currentState < 1) return
         this.currentState--
-        this.setState({ elements: [], refs: [] },
+        // console.log('undo', this.currentState, this.history.el.map(e => e[0] && e[0].e.props.path.map(p => p.join(" ")).join(" ")),
+        //     this.history.el[this.currentState][0].e.props.path.map(p => p.join(" ")).join(" "))
+        this.setState({ elements: [], refs: [], boundingBox: [] },
             () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
     }
     handleRedo() {
         if (this.currentState > this.history.el.length - 2) return
         this.currentState++
-        this.setState({ elements: [], refs: [] },
+        this.setState({ elements: [], refs: [], boundingBox: [] },
             () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
     }
 
@@ -407,7 +426,7 @@ export default class Content extends React.Component {
     }
 
     render() {
-        const { elements, boundingBox, open, positionX, positionY, startX, startY } = this.state
+        const { elements, boundingBox, open, positionX, positionY, startX, startY, objectW, objectH } = this.state
         // console.log(boundingBox)
         return (
             <div
@@ -441,7 +460,8 @@ export default class Content extends React.Component {
                     </svg>
                     <div style={{ position: 'absolute', bottom: 0, background: 'white', height: '20px', width: '100%' }}>
                         {positionX && <span style={{ margin: '0 20px' }}>{positionX}, {positionY}px</span>}
-                        {this.isDrawing && <span style={{ margin: '0 20px' }}>{positionX - startX} &times; {positionY - startY} px</span>}
+                        {/* {this.isDrawing && <span style={{ margin: '0 20px' }}>{positionX - startX} &times; {positionY - startY} px</span>} */}
+                        {(this.isMoving || this.isDrawing) && <span style={{ margin: '0 20px' }}>{objectW} &times; {objectH} px</span>}
                     </div>
                 </div>
                 <Dialog onClose={this.handleClose} aria-labelledby="simple-dialog-title" open={open}>

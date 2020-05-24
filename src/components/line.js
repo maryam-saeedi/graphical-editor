@@ -21,6 +21,8 @@ class Line extends React.Component {
         this.handleMove = this.handleMove.bind(this)
         this.handleMoving = this.handleMoving.bind(this)
         this.handleDoubleClick = this.handleDoubleClick.bind(this)
+
+        this.anchor = -1
     }
 
     componentDidMount() {
@@ -35,8 +37,8 @@ class Line extends React.Component {
     handleClick(e) {
         if (e.detail == 2)
             return
-        this.setState({ layout: true })
         this.anchor = -1
+        this.setState({ layout: true })
         e.preventDefault()
         e.stopPropagation()
         const { points } = this.state
@@ -67,6 +69,7 @@ class Line extends React.Component {
                 }
             })
             self.props.updateLayout(self.props.id, self.setBoundry())
+            // self.props.changeShape()
         }
     }
     updateStyle(prop, value) {
@@ -92,10 +95,15 @@ class Line extends React.Component {
         this.setState({ points, path })
     }
     move(dx, dy) {
-        console.log(this.anchor)
         let { points, path } = this.state
         const idx = this.anchor
-        // if (this.isAdding) {
+        if (idx == -1) {    // move whole line
+            points = points.map(p => [p[0] + dx, p[1] + dy])
+            path = path.map(p => { p.splice(1, 2, p[1] + dx, p[2] + dy); if (p.length > 3) p.splice(12, 2, p[12] + dx, p[13] + dy); return p })
+            this.setState({ path, points })
+            this.props.updateLayout(this.props.id, this.setBoundry())
+            return
+        }
         points.splice(idx, 1, [points[idx][0] + dx, points[idx][1] + dy])
         if (idx === points.length - 1 || idx === 0) {
             path.splice(idx, 1, [idx == 0 ? "M" : "L"].concat(points[idx]))
@@ -133,7 +141,6 @@ class Line extends React.Component {
     addBridge(idx) {
         const self = this
         return function () {
-            console.log('bricge', idx)
             let { points, path } = self.state
             const radius = 10 + 2 * self.props.weight
             const ang = Math.atan2(points[idx + 1][1] - points[idx][1], points[idx + 1][0] - points[idx][0]);
@@ -148,6 +155,7 @@ class Line extends React.Component {
                 }
             })
             self.props.updateLayout(self.props.id, self.setBoundry())
+            self.props.changeShape()
         }
     }
     handleLogic(logic) {
@@ -167,10 +175,15 @@ class Line extends React.Component {
         const { id, handleBoundryClick } = this.props
 
         const self = this
-        return function () {
+        return function (e) {
+            e.stopPropagation()
             self.anchor = anchor
             handleBoundryClick(id)
         }
+    }
+    clickLine(e) {
+        console.log('clikc l ine')
+        e.stopPropagation()
     }
     setBoundry() {
         const { points, path } = this.state
@@ -182,6 +195,7 @@ class Line extends React.Component {
         })
         const b =
             <g onClick={e => e.stopPropagation()}>
+                <path d={path.map(p => p.join(" ")).join(" ")} fill="transparent" stroke="transparent" strokeWidth="10px" onMouseDown={this.handleMoveLineAnchor(-1)} />
                 {points.map((p, i) => <circle cx={p[0]} cy={p[1]} r="3" fill="gray" onMouseDown={this.handleMoveLineAnchor(i)} />)}
                 {inter.flatMap((p, i) => [<circle cx={p.p[0]} cy={p.p[1]} r="3" fill="lightblue" stroke="gray" onMouseDown={this.handleAddAnchor(p.id)} />,
                 <circle cx={p.p[0]} cy={p.p[1] - 10} r="3" fill="yellow" stroke="gray" onClick={this.addBridge(p.id)} />])}
@@ -192,6 +206,11 @@ class Line extends React.Component {
     render() {
         const { points, layout, path } = this.state
         const { arrow, stroke, weight, dashed, corner, shadow, strong } = this.state
+
+        let d = `M ${points[0][0]} ${points[0][1]} `
+        for (let i = 1; i < points.length; i++) {
+            d += `l ${points[i][0] - points[i - 1][0]} ${points[i][1] - points[i - 1][1]} `
+        }
 
         const logic = this.logic
         let inter = []
@@ -212,22 +231,23 @@ class Line extends React.Component {
                     </feComponentTransfer>
                     <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
                 </filter>
-                <path d={path.map((p, i) => {
-                    let round = []
-                    if (i > 0 && !p.includes("a")) {
-                        inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] });
-                    }
-                    let tmp = [...p]
-                    if (corner == "round" && i > 0 && i < path.length - 1) {
-                        const ang1 = Math.atan2(points[i][1] - points[i - 1][1], points[i][0] - points[i - 1][0])
-                        const ang2 = Math.atan2(points[i + 1][1] - points[i][1], points[i + 1][0] - points[i][0])
-                        round = ["Q", points[i][0], points[i][1], points[i][0] + 10 * Math.cos(ang2), points[i][1] + 10 * Math.sin(ang2)]
-                        tmp.splice(p.length - 2, 2, p[p.length - 2] - 10 * Math.cos(ang1), p[p.length - 1] - 10 * Math.sin(ang1))
-                    }
-                    return tmp.concat(round).join(" ")
-                }).join(" ")}
-                    fill="none" stroke="var(--logic, black)" stroke-width={weight} strokeLinecap="round" strokeLinejoin="round"
-                    stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`}
+                <path
+                    d={path.map((p, i) => {
+                        let round = []
+                        if (i > 0 && !p.includes("a")) {
+                            inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] });
+                        }
+                        let tmp = [...p]
+                        if (corner == "round" && i > 0 && i < path.length - 1) {
+                            const ang1 = Math.atan2(points[i][1] - points[i - 1][1], points[i][0] - points[i - 1][0])
+                            const ang2 = Math.atan2(points[i + 1][1] - points[i][1], points[i + 1][0] - points[i][0])
+                            round = ["Q", points[i][0], points[i][1], points[i][0] + 10 * Math.cos(ang2), points[i][1] + 10 * Math.sin(ang2)]
+                            tmp.splice(p.length - 2, 2, p[p.length - 2] - 10 * Math.cos(ang1), p[p.length - 1] - 10 * Math.sin(ang1))
+                        }
+                        return tmp.concat(round).join(" ")
+                    }).join(" ")}
+                    fill="none" stroke="var(--logic, black)" strokeWidth={weight} strokeLinecap="round" strokeLinejoin="round"
+                    strokeDasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`}
                     filter={shadow ? "url(#shadow)" : ""} />
                 {arrow && <path d={`M${points[points.length - 1].join(" ")} L${points[points.length - 1][0] - 7 * Math.cos(angle - Math.PI / 8)} ${points[points.length - 1][1] - 7 * Math.sin(angle - Math.PI / 8)} L${points[points.length - 1][0] - 7 * Math.cos(angle + Math.PI / 8)} ${points[points.length - 1][1] - 7 * Math.sin(angle + Math.PI / 8)} Z`} fill={stroke} stroke={stroke} stroke-width={weight} />}
             </g>

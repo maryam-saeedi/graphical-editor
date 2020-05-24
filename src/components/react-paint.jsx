@@ -79,10 +79,8 @@ export default class ReactPaint extends React.Component {
     const self = this;
     return function (color) {
       if (target === "stroke") {
-        console.log('stroke change')
         self.setState({ stroke: color.hex })
       } else if (target === "fill") {
-        console.log('fill change')
         self.setState({ fill: color.hex })
       }
     }
@@ -160,7 +158,7 @@ export default class ReactPaint extends React.Component {
         <Content
           // items={this.state.toolbarItems}
           activeItem={this.state.selectedItem}
-          // handleClick={this.changeTool}
+          changeTool={this.changeTool}
           strokeColor={this.state.stroke}
           fillColor={this.state.fill}
           lineType={this.state.lineType}

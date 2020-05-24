@@ -1,5 +1,5 @@
 import React from "react"
-import { transparent } from "material-ui/styles/colors";
+import PropTypes from 'prop-types';
 
 class Text extends React.Component {
     constructor(props) {
@@ -7,27 +7,35 @@ class Text extends React.Component {
         this.state = {
             x: this.props.x,
             y: this.props.y,
-            edit: true,
+            edit: this.props.edit,
             text: this.props.text,
             stroke: this.props.stroke,
             fill: this.props.fill,
             weight: this.props.weight,
-            box: null
         }
 
         this.handleText = this.handleText.bind(this)
         this.handleBlur = this.handleBlur.bind(this)
+        this.handleFocus = this.handleFocus.bind(this)
         this.handleDoubleClick = this.handleDoubleClick.bind(this)
         this.handleClick = this.handleClick.bind(this)
         this.handleMouseDown = this.handleMouseDown.bind(this)
         this.move = this.move.bind(this)
 
+        this.box = null
         this.child = React.createRef()
     }
 
+    componentDidMount(){
+        this.box = this.child.current.getBBox()
+    }
     componentDidUpdate(prevProps, prevState) {
-        if (!prevState.box || prevState.box.x != this.child.current.getBBox().x || prevState.box.y != this.child.current.getBBox().y || prevState.box.width != this.child.current.getBBox().width || prevState.box.height != this.child.current.getBBox().height)
-            this.setState({ box: this.child.current.getBBox() })
+        //     this.setState({ box: this.child.current.getBBox() })
+        if (!this.box || this.box.x != this.child.current.getBBox().x || this.box.y != this.child.current.getBBox().y || this.box.width != this.child.current.getBBox().width || this.box.height != this.child.current.getBBox().height) {
+            this.box = this.child.current.getBBox()
+            this.forceUpdate()
+            return true
+        }
     }
     updateStyle(prop, value) {
         return new Promise((resolve, reject) => {
@@ -39,7 +47,10 @@ class Text extends React.Component {
         this.setState({ text: e.target.value })
     }
     handleBlur() {
-        this.setState({ edit: false })
+        this.setState({ edit: false }, ()=>this.props.changeShape())
+    }
+    handleFocus() {
+        this.setState({ edit: true })
     }
 
     handleLogic(logic) {
@@ -58,25 +69,26 @@ class Text extends React.Component {
     }
     move(dx, dy) {
         this.setState({ x: this.state.x + dx, y: this.state.y + dy })
+        this.props.updateLayout(this.props.id, this.setBoundry())
     }
     handleMouseDown() {
         this.props.handleBoundryClick(this.props.id)
     }
+
     setBoundry() {
-        const { x, y } = this.state
-        // return (
-        //     <g onClick={e => e.stopPropagation()}>
-        //         <rect x={x - 2} y={y - 25 - 2} width={100} height={30} stroke='gray' stroke-dasharray="5 5" fill='transparent' />
-        //     </g>
-        // )
+        return (
+            <g>
+                <rect x={this.box.x - 5} y={this.box.y - 5} width={this.box.width + 10} height={this.box.height + 10} 
+                stroke='gray' stroke-dasharray="5 5" fill='transparent' 
+                onMouseDown={this.handleMouseDown}  />
+            </g>
+        )
     }
     render() {
-        const { x, y, edit, text, box } = this.state
-        console.log(box) 
+        const { x, y, edit, text } = this.state
         const { weight, stroke, fill } = this.state
-        console.log(fill)
         return (
-            <g onMouseDown={this.handleMouseDown} onClick={this.handleClick} onDoubleClick={this.handleDoubleClick} element='Text' props={JSON.stringify(this.state)}>
+            <g onClick={this.handleClick} onDoubleClick={this.handleDoubleClick} element='Text' props={JSON.stringify(this.state)}>
                 {/* <defs>
                     <filter x="-0.2" y="-0.2" width="1.4" height="1.4" id="solid">
                         <feFlood flood-color={fill} flood-opacity="1" result="offsetColor" />
@@ -84,18 +96,23 @@ class Text extends React.Component {
                         <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
                     </filter>
                 </defs> */}
-                {box && <rect x={box.x} y={box.y} width={box.width} height={box.height} fill={fill} stroke="none" />}
-                <text x={x} y={y} font-size={2 * (weight - 1) + 10} fill={stroke} ref={this.child}>{text}</text>
-                {edit && <foreignObject x={x - 5} y={y - 21} width="100" height="30">
+                {this.box && <rect x={this.box.x} y={this.box.y} width={this.box.width} height={this.box.height} fill={fill} stroke="none" />}
+                <text x={x} y={y + 15} fontSize={2 * (weight - 1) + 10} fill={stroke} ref={this.child}>{text}</text>
+                {edit && <foreignObject x={x - 5} y={y - 5} width="100" height="30">
 
                     <input
-                        autoFocus={true} onChange={this.handleText} onBlur={this.handleBlur}
+                        autoFocus={edit} onChange={this.handleText} onBlur={this.handleBlur} onFocus={this.handleFocus}
+                        placeholder="text"
                         style={{ width: `calc(100% - 10px)`, padding: '5px', border: 'None', color: { stroke }, fontSize: `${weight + 11}px`, fontFamily: 'Comic Sans MS', outline: 'gray dashed 2px', background: 'transparent', color: 'transparent' }}
                     />
                 </foreignObject>}
             </g>
         )
     }
+}
+
+Text.defaultProps = {
+    edit: true
 }
 
 export default Text
