@@ -37,7 +37,7 @@ class Shape extends React.Component {
     updateStyle(prop, value) {
         console.log('update style')
         return new Promise((resolve, reject) => {
-            this.setState({ [prop]: value }, ()=>{console.log(this.state);resolve(1)})
+            this.setState({ [prop]: value }, () => { console.log(this.state); resolve(1) })
 
         })
     }
@@ -49,16 +49,16 @@ class Shape extends React.Component {
         console.log(this.parentNode)
         switch (direction) {
             case "Up":
-                this.setState({ y: 0 })
+                this.setState({ y: 0 }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
                 break
             case "Down":
-                this.setState({ y: position - this.state.h })
+                this.setState({ y: position - this.state.h }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
                 break
             case "Right":
-                this.setState({ x: position - this.state.w })
+                this.setState({ x: position - this.state.w }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
                 break
             case "Left":
-                this.setState({ x: 0 })
+                this.setState({ x: 0 }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
                 break
         }
     }

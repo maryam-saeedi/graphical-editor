@@ -310,13 +310,13 @@ export default class Content extends React.Component {
             case "ArrowRight":
                 dx = 1
                 dir = "Right"
-                pos = 0
+                pos = this.offsetW
                 break
-            case "Left":
-            case "ArrowLeft":
+                case "Left":
+                case "ArrowLeft":
                 dx = -1
                 dir = "Left"
-                pos = this.offsetW
+                pos = 0
                 break
         }
         if (e.shiftKey) this.selected.forEach(s => this.state.refs[s].current.handleAlign(dir, pos))
