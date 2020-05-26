@@ -19,6 +19,7 @@ class Shape extends React.Component {
             strong: this.props.strong
         }
         this.handleClick = this.handleClick.bind(this)
+        this.clickInBoundry = this.clickInBoundry.bind(this)
         this.handleResize = this.handleResize.bind(this)
         this.handleMoving = this.handleMoving.bind(this)
         this.handleKeyDown = this.handleKeyDown.bind(this)
@@ -26,6 +27,17 @@ class Shape extends React.Component {
         this.corner = 0
     }
 
+    componentDidMount() {
+        if(this.props.shape !== "Image")
+        return 
+        var reader = new FileReader();
+        const self = this
+        reader.onloadend = function () {
+            const src = reader.result
+            self.setState({src})
+        }
+        reader.readAsDataURL(this.props.file);
+    }
     handleClick(e) {
         const { x, y, w, h, layout } = this.state
         e.preventDefault()
@@ -41,15 +53,23 @@ class Shape extends React.Component {
 
         })
     }
+    getLocation() {
+        return { x: this.state.x, y: this.state.y, w: this.state.w, h: this.state.h }
+    }
+    setCorner(corner) {
+        this.corner = corner
+    }
+    getCorner() {
+        return this.corner
+    }
     handleResize(x, y, w, h) {
         this.setState({ x, y, w, h })
     }
 
     handleAlign(direction, position) {
-        console.log(this.parentNode)
         switch (direction) {
             case "Up":
-                this.setState({ y: 0 }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
+                this.setState({ y: position }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
                 break
             case "Down":
                 this.setState({ y: position - this.state.h }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
@@ -58,7 +78,7 @@ class Shape extends React.Component {
                 this.setState({ x: position - this.state.w }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
                 break
             case "Left":
-                this.setState({ x: 0 }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
+                this.setState({ x: position }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
                 break
         }
     }
@@ -93,22 +113,28 @@ class Shape extends React.Component {
         }
         this.handleMoving(dx, dy, dw, dh)
         this.props.updateLayout(this.props.id, this.setBoundry(), this.state.w + dw, this.state.h + dh)
+        this.isMoving = true
     }
     handleBoundingMouseDown(corner) {
         const { id, handleBoundryClick } = this.props
         // this.corner = 0
         const self = this
-        return function () {
-            console.log(corner, id)
+        return function (e) {
+            self.isMoving = false
+            e.stopPropagation()
             self.corner = corner
             handleBoundryClick(id)
         }
+    }
+    clickInBoundry(e) {
+        e.stopPropagation()
+        !this.isMoving && this.props.deselect(this.props.id)
     }
     setBoundry() {
         const { x, y, w, h } = this.state
         return (
             <g onClick={e => e.stopPropagation()}>
-                <rect x={x - 2} y={y - 2} width={w + 4} height={h + 4} stroke='gray' stroke-dasharray="5 5" fill='transparent' onMouseDown={this.handleBoundingMouseDown(0)} /> ,
+                <rect x={x - 2} y={y - 2} width={w + 4} height={h + 4} stroke='gray' stroke-dasharray="5 5" fill='transparent' onMouseDown={this.handleBoundingMouseDown(0)} onClick={this.clickInBoundry} /> ,
                 <circle cx={x - 5} cy={y - 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(1)} /> ,
                 <circle cx={x - 5} cy={y + h + 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(2)} /> ,
                 <circle cx={x + w + 5} cy={y - 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(3)} /> ,
@@ -120,7 +146,7 @@ class Shape extends React.Component {
         const { x, y, w, h } = this.state
         const { shape, weight, stroke, dashed, corner, fill, shadow, strong } = this.state
         const element =
-            shape === "Image" ? <image href={this.props.src} x={x} y={y} width={w} height={h} />
+            shape === "Image" ? <image href={this.state.src} x={x} y={y} width={w} height={h} />
                 : (shape === "Rectangle" ? (corner == 'round' && w > 10 && h > 10 ? <path d={`M ${x} ${y + 5} q 0 -5 5 -5 h ${w - 10} q 5 0 5 5 v ${h - 10} q 0 5 -5 5 h -${w - 10} q -5 0 -5 -5 Z`} x={x} y={y} width={w} height={h} stroke={stroke} stroke-width={weight} fill={fill} strokeLinecap={corner} strokeLinejoin={corner} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} filter={shadow ? "url(#shadow2)" : ""} />
                     : <rect x={x} y={y} width={w} height={h} stroke={stroke} stroke-width={weight} fill={fill} strokeLinecap='round' strokeLinejoin={corner} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} filter={shadow ? "url(#shadow2)" : ""} />)
                     : (shape === "Circle" ? <circle cx={x + w / 2} cy={y + w / 2} r={w / 2} stroke={stroke} stroke-width={weight} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} fill={fill} filter={shadow ? "url(#shadow2)" : ""} />

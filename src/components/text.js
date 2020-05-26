@@ -20,13 +20,14 @@ class Text extends React.Component {
         this.handleDoubleClick = this.handleDoubleClick.bind(this)
         this.handleClick = this.handleClick.bind(this)
         this.handleMouseDown = this.handleMouseDown.bind(this)
+        this.clickInBoundry = this.clickInBoundry.bind(this)
         this.move = this.move.bind(this)
 
         this.box = null
         this.child = React.createRef()
     }
 
-    componentDidMount(){
+    componentDidMount() {
         this.box = this.child.current.getBBox()
     }
     componentDidUpdate(prevProps, prevState) {
@@ -42,12 +43,15 @@ class Text extends React.Component {
             this.setState({ [prop]: value }, resolve(1))
         })
     }
+    getLocation() {
+        return { x: this.state.x, y: this.state.y, w: this.box.width, h: this.box.height }
+    }
 
     handleText(e) {
         this.setState({ text: e.target.value })
     }
     handleBlur() {
-        this.setState({ edit: false }, ()=>this.props.changeShape())
+        this.setState({ edit: false }, () => this.props.changeShape())
     }
     handleFocus() {
         this.setState({ edit: true })
@@ -70,17 +74,40 @@ class Text extends React.Component {
     move(dx, dy) {
         this.setState({ x: this.state.x + dx, y: this.state.y + dy })
         this.props.updateLayout(this.props.id, this.setBoundry())
+        this.isMoving = true
     }
     handleMouseDown() {
         this.props.handleBoundryClick(this.props.id)
+        this.isMoving = false
+    }
+    clickInBoundry(e) {
+        e.stopPropagation()
+        !this.isMoving && this.props.deselect(this.props.id)
+    }
+    handleAlign(direction, position) {
+        switch (direction) {
+            case "Up":
+                this.setState({ y: position }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
+                break
+            case "Down":
+                this.setState({ y: position - this.box.height }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
+                break
+            case "Right":
+                this.setState({ x: position - this.box.width }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
+                break
+            case "Left":
+                this.setState({ x: position }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
+                break
+        }
     }
 
     setBoundry() {
         return (
             <g>
-                <rect x={this.box.x - 5} y={this.box.y - 5} width={this.box.width + 10} height={this.box.height + 10} 
-                stroke='gray' stroke-dasharray="5 5" fill='transparent' 
-                onMouseDown={this.handleMouseDown}  />
+                <rect x={this.box.x - 5} y={this.box.y - 5} width={this.box.width + 10} height={this.box.height + 10}
+                    stroke='gray' stroke-dasharray="5 5" fill='transparent'
+                    onMouseDown={this.handleMouseDown}
+                    onClick={this.clickInBoundry} />
             </g>
         )
     }

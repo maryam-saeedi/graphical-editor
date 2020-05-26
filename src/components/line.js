@@ -21,8 +21,12 @@ class Line extends React.Component {
         this.handleMove = this.handleMove.bind(this)
         this.handleMoving = this.handleMoving.bind(this)
         this.handleDoubleClick = this.handleDoubleClick.bind(this)
+        this.clickInBoundry = this.clickInBoundry.bind(this)
 
         this.anchor = -1
+
+
+        this.child = React.createRef()
     }
 
     componentDidMount() {
@@ -33,6 +37,16 @@ class Line extends React.Component {
         path.push(["L"].concat(points[points.length - 1]))
 
         this.setState({ path })
+    }
+    componentDidUpdate() {
+        this.box = this.child.current.getBBox()
+    }
+    getCorner() {
+        return null
+    }
+    setCorner(corner) { }
+    getLocation() {
+        return { x: this.box.x, y: this.box.y, w: this.box.width, h: this.box.height }
     }
     handleClick(e) {
         if (e.detail == 2)
@@ -88,6 +102,25 @@ class Line extends React.Component {
 
         // }
     }
+    handleAlign(direction, position) {
+        this.anchor = -1
+        switch (direction) {
+            case "Up":
+                // this.setState({ y: position }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
+                this.move(0, -(this.box.y-position))
+                break
+            case "Down":
+                // this.setState({ y: position - this.state.h }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
+                this.move(0, position-this.box.y-this.box.height)
+                break
+            case "Right":
+                this.setState({ x: position - this.state.w }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
+                break
+            case "Left":
+                this.setState({ x: position }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
+                break
+        }
+    }
     handleMoving(dw, dh, dx, dy) {
         let { points, path } = this.state
         points.splice(1, 1, [points[1][0] + dx, points[1][1] + dy])
@@ -100,8 +133,8 @@ class Line extends React.Component {
         if (idx == -1) {    // move whole line
             points = points.map(p => [p[0] + dx, p[1] + dy])
             path = path.map(p => { p.splice(1, 2, p[1] + dx, p[2] + dy); if (p.length > 3) p.splice(12, 2, p[12] + dx, p[13] + dy); return p })
-            this.setState({ path, points })
-            this.props.updateLayout(this.props.id, this.setBoundry())
+            this.setState({ path, points },
+            ()=>this.props.updateLayout(this.props.id, this.setBoundry()))
             return
         }
         points.splice(idx, 1, [points[idx][0] + dx, points[idx][1] + dy])
@@ -134,6 +167,7 @@ class Line extends React.Component {
             }
         })
         this.props.updateLayout(this.props.id, this.setBoundry())
+        this.isMoving = true
     }
     handleCanvasUp() {
         this.isAdding = false
@@ -177,13 +211,14 @@ class Line extends React.Component {
         const self = this
         return function (e) {
             e.stopPropagation()
+            self.isMoving = false
             self.anchor = anchor
             handleBoundryClick(id)
         }
     }
-    clickLine(e) {
-        console.log('clikc l ine')
+    clickInBoundry(e) {
         e.stopPropagation()
+        !this.isMoving && this.props.deselect(this.props.id)
     }
     setBoundry() {
         const { points, path } = this.state
@@ -195,7 +230,7 @@ class Line extends React.Component {
         })
         const b =
             <g onClick={e => e.stopPropagation()}>
-                <path d={path.map(p => p.join(" ")).join(" ")} fill="transparent" stroke="transparent" strokeWidth="10px" onMouseDown={this.handleMoveLineAnchor(-1)} />
+                <path d={path.map(p => p.join(" ")).join(" ")} fill="transparent" stroke="transparent" strokeWidth="10px" onMouseDown={this.handleMoveLineAnchor(-1)} onClick={this.clickInBoundry} />
                 {points.map((p, i) => <circle cx={p[0]} cy={p[1]} r="3" fill="gray" onMouseDown={this.handleMoveLineAnchor(i)} />)}
                 {inter.flatMap((p, i) => [<circle cx={p.p[0]} cy={p.p[1]} r="3" fill="lightblue" stroke="gray" onMouseDown={this.handleAddAnchor(p.id)} />,
                 <circle cx={p.p[0]} cy={p.p[1] - 10} r="3" fill="yellow" stroke="gray" onClick={this.addBridge(p.id)} />])}
@@ -222,7 +257,9 @@ class Line extends React.Component {
                 onDoubleClick={this.handleDoubleClick}
                 // onContextMenu={this.handleRightClick}
                 //  onMouseMove={this.handleCanvasMove} 
-                onMouseDown={this.handleCanvasDown} onMouseUp={this.handleCanvasUp}>
+                onMouseDown={this.handleCanvasDown} onMouseUp={this.handleCanvasUp}
+                ref={this.child}
+            >
                 <filter id="shadow" x="-50%" y="-50%" height="200%" width="200%">
                     <feOffset dx="0" dy="0" result="offsetblur" />
                     <feGaussianBlur in="SourceAlpha" stdDeviation={strong} />
