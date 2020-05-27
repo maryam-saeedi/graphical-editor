@@ -47,9 +47,9 @@ class Line extends React.Component {
 
         })
     }
-    getStyle(){
-        const {stroke, weight, dashed, corner, shadow, strong} = this.state
-        return {stroke, weight, dashed, corner, shadow, strong}
+    getStyle() {
+        const { stroke, weight, dashed, corner, shadow, strong } = this.state
+        return { stroke, weight, dashed, corner, shadow, strong }
     }
     getCorner() {
         return null
@@ -68,7 +68,7 @@ class Line extends React.Component {
         const { points } = this.state
         let inter = []
         this.state.path.forEach((p, i) => {
-            if (i > 0 && !p.includes("a")) {
+            if (i > 0 && !p.includes("A")) {
                 inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] });
             }
         })
@@ -88,7 +88,7 @@ class Line extends React.Component {
             self.setState({ points, path })
             let inter = []
             path.map((p, i) => {
-                if (i > 0 && !p.includes("a")) {
+                if (i > 0 && !p.includes("A")) {
                     inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
                 }
             })
@@ -111,11 +111,11 @@ class Line extends React.Component {
         switch (direction) {
             case "Up":
                 // this.setState({ y: position }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
-                this.move(0, -(this.box.y-position))
+                this.move(0, -(this.box.y - position))
                 break
             case "Down":
                 // this.setState({ y: position - this.state.h }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
-                this.move(0, position-this.box.y-this.box.height)
+                this.move(0, position - this.box.y - this.box.height)
                 break
             case "Right":
                 this.setState({ x: position - this.state.w }, () => this.props.updateLayout(this.props.id, this.setBoundry()))
@@ -138,7 +138,7 @@ class Line extends React.Component {
             points = points.map(p => [p[0] + dx, p[1] + dy])
             path = path.map(p => { p.splice(1, 2, p[1] + dx, p[2] + dy); if (p.length > 3) p.splice(12, 2, p[12] + dx, p[13] + dy); return p })
             this.setState({ path, points },
-            ()=>this.props.updateLayout(this.props.id, this.setBoundry()))
+                () => this.props.updateLayout(this.props.id, this.setBoundry()))
             return
         }
         points.splice(idx, 1, [points[idx][0] + dx, points[idx][1] + dy])
@@ -146,19 +146,21 @@ class Line extends React.Component {
             path.splice(idx, 1, [idx == 0 ? "M" : "L"].concat(points[idx]))
         } else {
             const piece = path.splice(idx, 2)
-            const radius = 10 + 2 * this.props.weight
-            if (!piece[0].includes("a") && !piece[1].includes("a")) {
+            if (!piece[0].includes("A") && !piece[1].includes("A")) {
                 path.splice(idx, 0, ["L"].concat(points[idx]), piece[1])
             } else {
-                if (piece[0][3] === "a") {
+                if (piece[0][3] === "A") {
                     const ang = Math.atan2(points[idx][1] - points[idx - 1][1], points[idx][0] - points[idx - 1][0]);
-                    const interpolate = [(points[idx - 1][0] + points[idx][0]) / 2, (points[idx - 1][1] + points[idx][1]) / 2]
-                    path.splice(idx, 0, ["L", interpolate[0] - (radius / 2) * Math.cos(ang), interpolate[1] - (radius / 2) * Math.sin(ang), "a", 10 + this.props.weight, 30, ang * 180 / Math.PI, 0, 1, radius * Math.cos(ang), radius * Math.sin(ang), "L", points[idx][0], points[idx][1]], piece[1])
+                    path.splice(idx, 0,
+                        ["L", points[idx - 1][0] + 10 * Math.cos(ang), points[idx - 1][1] + 10 * Math.sin(ang), "A", 10, 10, ang * 180 / Math.PI, 0, 1, points[idx][0] - 10 * Math.cos(ang), points[idx][1] - 10 * Math.sin(ang), "L", points[idx][0], points[idx][1]],
+                        piece[1])
                 }
-                if (piece[1][3] === "a") {
+                if (piece[1][3] === "A") {
                     const ang = Math.atan2(points[idx + 1][1] - points[idx][1], points[idx + 1][0] - points[idx][0]);
                     const interpolate = [(points[idx][0] + points[idx + 1][0]) / 2, (points[idx][1] + points[idx + 1][1]) / 2]
-                    path.splice(idx, 0, ["L"].concat(points[idx]), ["L", interpolate[0] - (radius / 2) * Math.cos(ang), interpolate[1] - (radius / 2) * Math.sin(ang), "a", 10 + this.props.weight, 30, ang * 180 / Math.PI, 0, 1, radius * Math.cos(ang), radius * Math.sin(ang), "L", points[idx + 1][0], points[idx + 1][1]])
+                    path.splice(idx, 0,
+                        ["L"].concat(points[idx]),
+                        ["L", points[idx][0] + 10 * Math.cos(ang), points[idx][1] + 10 * Math.sin(ang), "A", 10, 10, ang * 180 / Math.PI, 0, 1, points[idx + 1][0] - 10 * Math.cos(ang), points[idx + 1][1] - 10 * Math.sin(ang), "L", points[idx + 1][0], points[idx + 1][1]])
                 }
             }
         }
@@ -166,7 +168,7 @@ class Line extends React.Component {
         this.setState({ points, path })
         let inter = []
         path.map((p, i) => {
-            if (i > 0 && !p.includes("a")) {
+            if (i > 0 && !p.includes("A")) {
                 inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
             }
         })
@@ -180,15 +182,18 @@ class Line extends React.Component {
         const self = this
         return function () {
             let { points, path } = self.state
-            const radius = 10 + 2 * self.props.weight
             const ang = Math.atan2(points[idx + 1][1] - points[idx][1], points[idx + 1][0] - points[idx][0]);
-            points.splice(idx + 1, 0, [points[idx][0] + ((points[idx + 1][0] - points[idx][0]) / 3), points[idx][1] + ((points[idx + 1][1] - points[idx][1]) / 3)], [points[idx][0] + ((points[idx + 1][0] - points[idx][0]) * 2 / 3), points[idx][1] + ((points[idx + 1][1] - points[idx][1]) * 2 / 3)])
-            const interpolate = [(points[idx + 1][0] + points[idx + 2][0]) / 2, (points[idx + 1][1] + points[idx + 2][1]) / 2]
-            path.splice(idx + 1, 1, ["L", points[idx + 1][0], points[idx + 1][1]], ["L", interpolate[0] - (radius / 2) * Math.cos(ang), interpolate[1] - (radius / 2) * Math.sin(ang), "a", 10 + self.props.weight, 30, ang * 180 / Math.PI, 0, 1, radius * Math.cos(ang), radius * Math.sin(ang), "L", points[idx + 2][0], points[idx + 2][1]], ["L", points[idx + 3][0], points[idx + 3][1]])
+            points.splice(idx + 1, 0,
+                [points[idx][0] + ((points[idx + 1][0] - points[idx][0]) / 2) - 20 * Math.cos(ang), points[idx][1] + ((points[idx + 1][1] - points[idx][1]) / 2) - 20 * Math.sin(ang)],
+                [points[idx][0] + ((points[idx + 1][0] - points[idx][0]) / 2) + 20 * Math.cos(ang), points[idx][1] + ((points[idx + 1][1] - points[idx][1]) / 2) + 20 * Math.sin(ang)])
+            path.splice(idx + 1, 1,
+                ["L", points[idx + 1][0], points[idx + 1][1]],
+                ["L", points[idx + 1][0] + 10 * Math.cos(ang), points[idx + 1][1] + 10 * Math.sin(ang), "A", 10, 10, ang * 180 / Math.PI, 0, 1, points[idx + 2][0] - 10 * Math.cos(ang), points[idx + 2][1] - 10 * Math.sin(ang), "L", points[idx + 2][0], points[idx + 2][1]],
+                ["L", points[idx + 3][0], points[idx + 3][1]])
             self.setState({ points, path })
             let inter = []
             path.map((p, i) => {
-                if (i > 0 && !p.includes("a")) {
+                if (i > 0 && !p.includes("A")) {
                     inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
                 }
             })
@@ -228,7 +233,7 @@ class Line extends React.Component {
         const { points, path } = this.state
         let inter = []
         path.map((p, i) => {
-            if (i > 0 && !p.includes("a")) {
+            if (i > 0 && !p.includes("A")) {
                 inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
             }
         })
@@ -275,7 +280,7 @@ class Line extends React.Component {
                 <path
                     d={path.map((p, i) => {
                         let round = []
-                        if (i > 0 && !p.includes("a")) {
+                        if (i > 0 && !p.includes("A")) {
                             inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] });
                         }
                         let tmp = [...p]
