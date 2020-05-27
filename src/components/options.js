@@ -60,7 +60,6 @@ export default class Options extends React.Component {
     render() {
         const { activeItem } = this.props
         const { corner, dashed, weight, strong, shadow, stroke, fill, zoom, font, size, bold } = this.props.defaultValues
-        console.log(activeItem, this.props.defaultValues)
         return (
             <div style={{ display: 'flex', padding: '0 0 12px' }}>
                 <div style={{ display: 'flex', flexDirection: 'row' }}>

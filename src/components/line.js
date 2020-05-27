@@ -136,7 +136,7 @@ class Line extends React.Component {
         const idx = this.anchor
         if (idx == -1) {    // move whole line
             points = points.map(p => [p[0] + dx, p[1] + dy])
-            path = path.map(p => { p.splice(1, 2, p[1] + dx, p[2] + dy); if (p.length > 3) p.splice(12, 2, p[12] + dx, p[13] + dy); return p })
+            path = path.map(p => { p.splice(1, 2, p[1] + dx, p[2] + dy); if (p.length > 3) {p.splice(9, 2, p[9] + dx, p[10] + dy); p.splice(12, 2, p[12] + dx, p[13] + dy);} return p })
             this.setState({ path, points },
                 () => this.props.updateLayout(this.props.id, this.setBoundry()))
             return
