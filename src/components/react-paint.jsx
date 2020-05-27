@@ -46,6 +46,27 @@ const toolbarItems = [
   { name: "Move", image: resize },
   { name: "Copy", image: copy },
 ];
+const categories = {
+  'Line': 'Line',
+  'Arrow': 'Line',
+  'Rectangle': 'Shape',
+  'Circle': 'Shape',
+  'Ellipse': 'Shape',
+  'Text': 'Text'
+}
+const defaultOption = {
+  stroke: null,
+  fill: "transparent",
+  weight: 3,
+  dashed: 0,
+  shadow: false,
+  strong: 10,
+  corner: 'round',
+  zoom: 1,
+  font: "Times New Roman",
+  size: 12,
+  bold: false,
+}
 
 export default class ReactPaint extends React.Component {
   constructor(props) {
@@ -53,66 +74,39 @@ export default class ReactPaint extends React.Component {
     this.state = {
       stroke: defaultColor,
       fill: "transparent",
-      lineWidth: 3,
-      lineType: 0,
+      weight: 3,
+      dashed: 0,
       shadow: false,
       strong: 10,
       corner: 'round',
       zoom: 1,
+      font: "Times New Roman",
+      size: 12,
+      bold: false,
       selectedItem: defaultTool,
+      currentItem: new Set([categories[defaultTool]]),
+      defaultValues: defaultOption,
       toolbarItems: toolbarItems
     };
-    this.changeColor = this.changeColor.bind(this);
     this.changeTool = this.changeTool.bind(this);
-    this.changeLineType = this.changeLineType.bind(this);
-    this.changeCornerType = this.changeCornerType.bind(this)
-    this.changeLineWidth = this.changeLineWidth.bind(this);
-    this.changeShaow = this.changeShaow.bind(this)
-    this.changeZoom = this.changeZoom.bind(this)
-    this.changeShadowStrong = this.changeShadowStrong.bind(this)
+    // this.changeZoom = this.changeZoom.bind(this)
     this.handleFileBrowser = this.handleFileBrowser.bind(this);
-  }
-
-  changeColor(target) {
-    // console.log('color', event.target)
-    // this.setState({ color: event.target.style.backgroundColor });
-    const self = this;
-    return function (color) {
-      if (target === "stroke") {
-        self.setState({ stroke: color.hex })
-      } else if (target === "fill") {
-        self.setState({ fill: color.hex })
-      }
-    }
+    this.changeOption = this.changeOption.bind(this)
+    this.selectItem = this.selectItem.bind(this)
   }
 
   changeTool(event, tool) {
-    this.setState({ selectedItem: tool });
+    this.setState({ selectedItem: tool, currentItem: new Set([categories[tool]]) });
     if (tool === "Image") {
       this.refs.fileUploader.click();
     }
   }
 
-  changeLineType(event) {
-    this.setState({ lineType: event.target.value })
+  selectItem(item, values) {
+    this.setState({ currentItem: item, defaultValues: {...this.state.defaultValues, ...values} })
   }
-
-  changeCornerType(event) {
-    this.setState({ corner: event.target.value })
-  }
-
-  changeLineWidth(event, newValue) {
-    this.setState({ lineWidth: newValue })
-  }
-  changeShadowStrong(event, newValue) {
-    this.setState({ strong: newValue })
-  }
-
-  changeShaow(event) {
-    this.setState({ shadow: event.target.checked })
-  }
-  changeZoom(event, newValue) {
-    this.setState({ zoom: newValue })
+  changeOption(target, value) {
+    this.setState({ [target]: value, defaultValues: {...this.state.defaultValues, [target]: value} })
   }
 
   handleFileBrowser(event) {
@@ -133,26 +127,29 @@ export default class ReactPaint extends React.Component {
           />
           <div style={{ width: '1px', borderRight: '1px solid gray', margin: '10px 20px' }} />
           <Options
-            lineType={this.state.lineType}
+            activeItem={this.state.currentItem}
+            dashed={this.state.dashed}
             corner={this.state.corner}
-            lineWidth={this.state.lineWidth}
+            weight={this.state.weight}
             shadow={this.state.shadow}
             strong={this.state.strong}
             zoom={this.state.zoom}
-            handleChangeLineType={this.changeLineType}
-            handleChangeCorner={this.changeCornerType}
-            handleChangeLineWidth={this.changeLineWidth}
-            handleShadow={this.changeShaow}
-            handleChangeShadowStrong={this.changeShadowStrong}
-            handleChangeZoom={this.changeZoom}
+            font={this.state.font}
+            bold={this.state.bold}
+            size={this.state.size}
+            // handleChangeZoom={this.changeZoom}
+            handleChangeOption={this.changeOption}
+            selectedStrokeColor={this.state.stroke}
+            selectedFillColor={this.state.fill}
+            defaultValues={this.state.defaultValues}
             style={{ height: "50px" }}
           />
-          <div style={{ width: '1px', borderRight: '1px solid gray', margin: '10px 20px' }} />
-          <ColorPanel
+          {/* <div style={{ width: '1px', borderRight: '1px solid gray', margin: '10px 20px' }} /> */}
+          {/* <ColorPanel
             selectedStrokeColor={this.state.stroke}
             selectedFillColor={this.state.fill}
             handleClick={this.changeColor}
-          />
+          /> */}
         </div>
         <input type="file" id="file" ref="fileUploader" accept="image/*" onChange={this.handleFileBrowser} style={{ display: "none" }} />
         <Content
@@ -161,13 +158,17 @@ export default class ReactPaint extends React.Component {
           changeTool={this.changeTool}
           strokeColor={this.state.stroke}
           fillColor={this.state.fill}
-          lineType={this.state.lineType}
-          lineWidth={this.state.lineWidth}
+          dashed={this.state.dashed}
+          weight={this.state.weight}
           shadow={this.state.shadow}
           strong={this.state.strong}
+          font={this.state.font}
+          size={this.state.size}
+          bold={this.state.bold}
           cornerType={this.state.corner}
           file={this.state.file}
           zoom={this.state.zoom}
+          selectItem={this.selectItem}
         />
       </div>
     );

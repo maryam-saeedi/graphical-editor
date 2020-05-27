@@ -53,6 +53,10 @@ class Shape extends React.Component {
 
         })
     }
+    getStyle(){
+        const {stroke, fill, width, dashed, corner, shadow, strong} = this.state
+        return {stroke, fill, width, dashed, corner, shadow, strong}
+    }
     getLocation() {
         return { x: this.state.x, y: this.state.y, w: this.state.w, h: this.state.h }
     }

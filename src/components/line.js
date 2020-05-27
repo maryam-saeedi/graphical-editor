@@ -41,6 +41,16 @@ class Line extends React.Component {
     componentDidUpdate() {
         this.box = this.child.current.getBBox()
     }
+    updateStyle(prop, value) {
+        return new Promise((resolve, reject) => {
+            this.setState({ [prop]: value }, resolve(1))
+
+        })
+    }
+    getStyle(){
+        const {stroke, weight, dashed, corner, shadow, strong} = this.state
+        return {stroke, weight, dashed, corner, shadow, strong}
+    }
     getCorner() {
         return null
     }
@@ -85,12 +95,6 @@ class Line extends React.Component {
             self.props.updateLayout(self.props.id, self.setBoundry())
             // self.props.changeShape()
         }
-    }
-    updateStyle(prop, value) {
-        return new Promise((resolve, reject) => {
-            this.setState({ [prop]: value }, resolve(1))
-
-        })
     }
     handleMove(idx, e) {
         // const self = this

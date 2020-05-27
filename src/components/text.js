@@ -11,7 +11,10 @@ class Text extends React.Component {
             text: this.props.text,
             stroke: this.props.stroke,
             fill: this.props.fill,
-            weight: this.props.weight,
+            size: this.props.size,
+            bold: this.props.bold,
+            font: this.props.font
+
         }
 
         this.handleText = this.handleText.bind(this)
@@ -43,6 +46,14 @@ class Text extends React.Component {
             this.setState({ [prop]: value }, resolve(1))
         })
     }
+    getStyle() {
+        const { stroke, fill, bold, font, size } = this.state
+        return { stroke, fill, bold, font, size }
+    }
+    getCorner() {
+        return null
+    }
+    setCorner(corner) { }
     getLocation() {
         return { x: this.state.x, y: this.state.y, w: this.box.width, h: this.box.height }
     }
@@ -113,7 +124,7 @@ class Text extends React.Component {
     }
     render() {
         const { x, y, edit, text } = this.state
-        const { weight, stroke, fill } = this.state
+        const { size, font, bold, stroke, fill } = this.state
         return (
             <g onClick={this.handleClick} onDoubleClick={this.handleDoubleClick} element='Text' props={JSON.stringify(this.state)}>
                 {/* <defs>
@@ -124,13 +135,13 @@ class Text extends React.Component {
                     </filter>
                 </defs> */}
                 {this.box && <rect x={this.box.x} y={this.box.y} width={this.box.width} height={this.box.height} fill={fill} stroke="none" />}
-                <text x={x} y={y + 15} fontSize={2 * (weight - 1) + 10} fill={stroke} ref={this.child}>{text}</text>
+                <text x={x} y={y + 15} fontFamily={font} fontSize={size} fontWeight={bold ? 'bold' : 'normal'} fill={stroke} ref={this.child}>{text}</text>
                 {edit && <foreignObject x={x - 5} y={y - 5} width="100" height="30">
 
                     <input
                         autoFocus={edit} onChange={this.handleText} onBlur={this.handleBlur} onFocus={this.handleFocus}
                         placeholder="text"
-                        style={{ width: `calc(100% - 10px)`, padding: '5px', border: 'None', color: { stroke }, fontSize: `${weight + 11}px`, fontFamily: 'Comic Sans MS', outline: 'gray dashed 2px', background: 'transparent', color: 'transparent' }}
+                        style={{ width: `calc(100% - 10px)`, padding: '5px', border: 'None', color: { stroke }, fontSize: `${size}px`, fontFamily: { font }, outline: 'gray dashed 2px', background: 'transparent', color: 'transparent' }}
                     />
                 </foreignObject>}
             </g>
