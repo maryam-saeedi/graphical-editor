@@ -55,7 +55,7 @@ const categories = {
   'Text': 'Text'
 }
 const defaultOption = {
-  stroke: null,
+  stroke: defaultColor,
   fill: "transparent",
   weight: 3,
   dashed: 0,
@@ -139,8 +139,8 @@ export default class ReactPaint extends React.Component {
             size={this.state.size}
             // handleChangeZoom={this.changeZoom}
             handleChangeOption={this.changeOption}
-            selectedStrokeColor={this.state.stroke}
-            selectedFillColor={this.state.fill}
+            stroke={this.state.stroke}
+            fill={this.state.fill}
             defaultValues={this.state.defaultValues}
             style={{ height: "50px" }}
           />
@@ -156,8 +156,8 @@ export default class ReactPaint extends React.Component {
           // items={this.state.toolbarItems}
           activeItem={this.state.selectedItem}
           changeTool={this.changeTool}
-          strokeColor={this.state.stroke}
-          fillColor={this.state.fill}
+          stroke={this.state.stroke}
+          fill={this.state.fill}
           dashed={this.state.dashed}
           weight={this.state.weight}
           shadow={this.state.shadow}

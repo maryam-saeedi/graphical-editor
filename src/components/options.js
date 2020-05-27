@@ -59,10 +59,10 @@ export default class Options extends React.Component {
     }
     render() {
         const { activeItem } = this.props
-        const { corner, dashed, weight, strong, shadow, zoom, font, size, bold } = this.props.defaultValues
+        const { corner, dashed, weight, strong, shadow, stroke, fill, zoom, font, size, bold } = this.props.defaultValues
         console.log(activeItem, this.props.defaultValues)
         return (
-            <div style={{display: 'flex', padding: '0 0 12px'}}>
+            <div style={{ display: 'flex', padding: '0 0 12px' }}>
                 <div style={{ display: 'flex', flexDirection: 'row' }}>
                     {(activeItem.has("Shape") || activeItem.has("Line")) &&
                         [
@@ -107,13 +107,13 @@ export default class Options extends React.Component {
                                     />
                                 </div>
                                 <div>
-                                    <FormLabel style={{fontSize: '13px'}}>Shadow</FormLabel>
+                                    <FormLabel style={{ fontSize: '13px' }}>Shadow</FormLabel>
                                     <div style={{ display: 'flex' }}>
                                         <Checkbox
                                             checked={shadow}
                                             onChange={this.handleCheckbox('shadow')}
                                             color="primary"
-                                            style={{padding: '3px'}}
+                                            style={{ padding: '3px' }}
                                         />
                                         <Slider
                                             value={typeof strong === 'number' ? strong : 0}
@@ -131,8 +131,8 @@ export default class Options extends React.Component {
                                     </div>
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center" }}>
-                                    <ColorPicker color={this.props.selectedStrokeColor} title="Outline" handleSetColor={this.handleChangeColor('stroke')} />
-                                    {activeItem.has("Shape") && <ColorPicker color={this.props.selectedFillColor} title="Fill" handleSetColor={this.handleChangeColor('fill')} />}
+                                    <ColorPicker color={stroke} title="Outline" handleSetColor={this.handleChangeColor('stroke')} />
+                                    {activeItem.has("Shape") && <ColorPicker color={fill} title="Fill" handleSetColor={this.handleChangeColor('fill')} />}
                                 </div>
                             </div>
                         ]}
@@ -165,7 +165,7 @@ export default class Options extends React.Component {
                                 <MenuItem value={18}>18</MenuItem>
                                 <MenuItem value={20}>20</MenuItem>
                             </Select>
-                            <IconButton style={{padding: '5px', borderRadius: '5px', background: bold ? 'lightblue' : 'none' }}
+                            <IconButton style={{ padding: '5px', borderRadius: '5px', background: bold ? 'lightblue' : 'none' }}
                                 onClick={this.handleToggleButton('bold')}>
                                 <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: boldIcon }} />
                             </IconButton>
@@ -175,8 +175,8 @@ export default class Options extends React.Component {
                                 color="primary"
                             /> */}
                             <div style={{ display: "flex", alignItems: "center" }}>
-                                <ColorPicker color={this.props.selectedStrokeColor} title="Text" handleSetColor={this.handleChangeColor('stroke')} />
-                                <ColorPicker color={this.props.selectedFillColor} title="Background" handleSetColor={this.handleChangeColor('fill')} />
+                                <ColorPicker color={stroke} title="Text" handleSetColor={this.handleChangeColor('stroke')} />
+                                <ColorPicker color={fill} title="Background" handleSetColor={this.handleChangeColor('fill')} />
                             </div>
                         </div>}
 

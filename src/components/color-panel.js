@@ -28,6 +28,11 @@ class ColorPicker extends React.Component {
     this.handleClose = this.handleClose.bind(this)
     this.handleClick = this.handleClick.bind(this)
   }
+  componentDidUpdate(prevProps, prevState){
+    if(this.state.color != this.props.color){
+      this.setState({color: this.props.color})
+    }
+  }
   handleChangeColor(color) {
     const { closeOnSelect } = this.props
     this.setState({ color: color.hex, open: !closeOnSelect })

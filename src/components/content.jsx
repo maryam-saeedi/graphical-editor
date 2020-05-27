@@ -126,7 +126,7 @@ export default class Content extends React.Component {
         this.offsetH = this.canvas.current.getBoundingClientRect().height
     }
     componentDidUpdate(prevProps, prevState) {
-        const { dashed, weight, cornerType, strokeColor, fillColor, shadow, strong, font, size, bold } = this.props
+        const { dashed, weight, cornerType, stroke, fill, shadow, strong, font, size, bold } = this.props
         if (this.props.activeItem != prevProps.activeItem && (this.props.activeItem == "Erase" || this.props.activeItem == "Copy")) {
             this.selected = []
             this.setState({ boundingBox: {} })
@@ -142,12 +142,12 @@ export default class Content extends React.Component {
             } else if (cornerType != prevProps.cornerType) {
                 prop = 'corner'
                 value = cornerType
-            } else if (strokeColor != prevProps.strokeColor) {
+            } else if (stroke != prevProps.stroke) {
                 prop = 'stroke'
-                value = strokeColor
-            } else if (fillColor != prevProps.fillColor) {
+                value = stroke
+            } else if (fill != prevProps.fill) {
                 prop = 'fill'
-                value = fillColor
+                value = fill
             } else if (shadow != prevProps.shadow) {
                 prop = 'shadow'
                 value = shadow
@@ -254,7 +254,7 @@ export default class Content extends React.Component {
             const ref = React.createRef()
             element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)}
                 text="" size={this.props.size}
-                stroke={this.props.strokeColor} fill={this.props.fillColor}
+                stroke={this.props.stroke} fill={this.props.fill}
                 font={this.props.font} bold={this.props.bold}
                 ref={ref} id={this.state.count} key={this.state.count}
                 clickInside={this.handleClickInside}
@@ -285,7 +285,7 @@ export default class Content extends React.Component {
         if (activeItem === "Line" || activeItem === "Arrow" || activeItem === "Bridge")
             element = <Line
                 points={[[scale * (e.clientX - this.offsetX), scale * (e.clientY - this.offsetY)], [scale * (e.clientX - this.offsetX), scale * (e.clientY - this.offsetY)]]}
-                arrow={activeItem == "Arrow"} stroke={this.props.strokeColor} weight={this.props.weight} dashed={this.props.dashed}
+                arrow={activeItem == "Arrow"} stroke={this.props.stroke} weight={this.props.weight} dashed={this.props.dashed}
                 key={this.state.count}
                 id={this.state.count}
                 path={[]}
@@ -300,7 +300,7 @@ export default class Content extends React.Component {
                 changeShape={this.handleShapeChange}
             />
         else if (activeItem === "Rectangle" || activeItem === "Circle" || activeItem === "Ellipse") {
-            element = <Shape x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} stroke={this.props.strokeColor} fill={this.props.fillColor} dashed={this.props.dashed} weight={this.props.weight} earase={this.state.earase} click={this.state.click}
+            element = <Shape x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} stroke={this.props.stroke} fill={this.props.fill} dashed={this.props.dashed} weight={this.props.weight} earase={this.state.earase} click={this.state.click}
                 key={this.state.count}
                 corner={this.props.cornerType}
                 shadow={this.props.shadow}
