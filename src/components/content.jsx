@@ -102,6 +102,7 @@ export default class Content extends React.Component {
         this.handleDeselect = this.handleDeselect.bind(this)
         this.handleChangeZoom = this.handleChangeZoom.bind(this)
         this.handleBGChange = this.handleBGChange.bind(this)
+        this.handlekeyUp = this.handlekeyUp.bind(this)
 
         this.menubarItems = [
             { name: "Open", image: open, func: this.handleOpen },
@@ -117,6 +118,7 @@ export default class Content extends React.Component {
         this.offsetH = "100%"
         this.move = null
         this.selected = []
+        this.multiCopy = []
     }
 
     componentDidMount() {
@@ -126,7 +128,7 @@ export default class Content extends React.Component {
         this.offsetH = this.canvas.current.getBoundingClientRect().height
     }
     componentDidUpdate(prevProps, prevState) {
-        const { dashed, weight, cornerType, stroke, fill, shadow, strong, font, size, bold } = this.props
+        const { dashed, weight, cornerType, stroke, fill, shadow, strong, font, size, bold, width, height } = this.props
         if (this.props.activeItem != prevProps.activeItem && (this.props.activeItem == "Erase" || this.props.activeItem == "Copy")) {
             this.selected = []
             this.setState({ boundingBox: {} })
@@ -168,6 +170,20 @@ export default class Content extends React.Component {
                 this.selected.forEach(s => {
                     this.state.refs[s].current.updateStyle(prop, value).then(res => this.snapshot())
                 })
+                return
+            }
+            if (width != prevProps.width) {
+                prop = 'w'
+                value = width
+            } else if (height != prevProps.height) {
+                prop = 'h'
+                value = height
+            }
+            if (prop) {
+                this.selected.forEach(s => {
+                    this.state.refs[s].current.setSize(prop, value).then(res => this.snapshot())
+                })
+                return
             }
         }
     }
@@ -175,14 +191,15 @@ export default class Content extends React.Component {
     handleMouseMove(e) {
         this.setState({ positionX: e.clientX - this.offsetX, positionY: e.clientY - this.offsetY })
 
-        const scale = this.props.zoom
+        const scale = this.state.zoom
         if (this.resizedItem != undefined) {
             // this.state.refs[this.resizedItem].current.move(scale * e.movementX, scale * e.movementY)
             const corner = this.state.refs[this.resizedItem].current.getCorner()
             this.selected.forEach(s => { this.state.refs[s].current.setCorner(corner); this.state.refs[s].current.move(scale * e.movementX, scale * e.movementY) })
         }
         if (this.isDrawing) {
-            this.state.refs[this.currentItem].current.handleMoving(0, 0, scale * e.movementX, scale * e.movementY)
+            const { x, y, w, h } = this.state.refs[this.currentItem].current.handleMoving(0, 0, scale * e.movementX, scale * e.movementY)
+            this.props.selectItem(null, { 'width': w, 'height': h })
             this.setState({ objectW: e.clientX - this.offsetX - this.state.startX, objectH: e.clientY - this.state.startY - this.offsetY })
         }
     }
@@ -203,14 +220,19 @@ export default class Content extends React.Component {
         this.selected.forEach(s => this.state.refs[s].current instanceof Shape ? type.add('Shape') : this.state.refs[s].current instanceof Line ? type.add('Line') : this.state.refs[s].current instanceof Text ? type.add('Text') : type.add('None'))
         this.props.selectItem(type, this.selected.length > 0 ? this.state.refs[this.selected[this.selected.length - 1]].current.getStyle() : {})
     }
+    select(id) {
+        let type = new Set()
+        const { boundingBox } = this.state
+        boundingBox[id] = this.state.refs[id].current.setBoundry()
+        this.setState({ boundingBox })
+        // this.setState({ boundingBox: { ...this.state.boundingBox, [id]: this.state.refs[id].current.setBoundry() } })
+        this.selected = [...this.selected, id]
+        this.selected.forEach(s => this.state.refs[s].current instanceof Shape ? type.add('Shape') : this.state.refs[s].current instanceof Line ? type.add('Line') : this.state.refs[s].current instanceof Text ? type.add('Text') : type.add('None'))
+        this.props.selectItem(type, this.state.refs[id].current.getStyle())
+    }
     handleClickInside(id, ctrl = false) {
         if (this.props.activeItem === "Move") {
-            let type = new Set()
-            this.setState({ boundingBox: { ...this.state.boundingBox, [id]: this.state.refs[id].current.setBoundry() } })
-            this.selected = [...this.selected, id]
-            this.selected.forEach(s => this.state.refs[s].current instanceof Shape ? type.add('Shape') : this.state.refs[s].current instanceof Line ? type.add('Line') : this.state.refs[s].current instanceof Text ? type.add('Text') : type.add('None'))
-            this.props.selectItem(type, this.state.refs[id].current.getStyle())
-
+            this.select(id)
         }
         else if (this.props.activeItem === "Erase") {
             const { refs } = this.state
@@ -219,11 +241,14 @@ export default class Content extends React.Component {
         }
         else if (this.props.activeItem == "Copy") {
             const { elements, refs, count } = this.state
+            const { changeTool } = this.props
             const ref = React.createRef()
-            const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { ...refs[id].current.state, x: 10, y: 10, id: count, ref: ref, key: count })
+            const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { ...refs[id].current.state, id: count, ref: ref, key: count })
             refs[count] = ref
-            this.props.changeTool(null, "Move")
-            this.setState({ elements: [...this.state.elements, { id: count, e: newE }], refs, count: count + 1 }, () => this.handleClickInside(count))
+            if (ctrl) {
+                this.multiCopy.push(count)
+            }
+            this.setState({ elements: [...this.state.elements, { id: count, e: newE }], refs, count: count + 1 }, () => { if (ctrl) return; changeTool(null, "Move"); this.handleClickInside(count) })
         }
     }
 
@@ -240,10 +265,11 @@ export default class Content extends React.Component {
         const { boundingBox } = this.state
         boundingBox[id] = layout
         this.setState({ boundingBox, objectW: w, objectH: h })
+        this.props.selectItem(null, { 'width': w, 'height': h })
     }
     handleClick(e) {
-        const { refs } = this.state
-        const { activeItem, zoom } = this.props
+        const { refs, zoom } = this.state
+        const { activeItem } = this.props
         const scale = zoom
         let element = null
         this.item = {}
@@ -274,8 +300,8 @@ export default class Content extends React.Component {
         }
     }
     handleMouseDown(e) {
-        const { refs } = this.state
-        const { activeItem, zoom } = this.props
+        const { refs, zoom } = this.state
+        const { activeItem } = this.props
         const ref = React.createRef()
         const scale = zoom
         let element = null
@@ -299,7 +325,7 @@ export default class Content extends React.Component {
                 deselect={this.handleDeselect}
                 changeShape={this.handleShapeChange}
             />
-        else if (activeItem === "Rectangle" || activeItem === "Circle" || activeItem === "Ellipse") {
+        else if (activeItem === "Rectangle" || activeItem === "Circle" || activeItem === "Ellipse" || activeItem === "Triangle") {
             element = <Shape x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} stroke={this.props.stroke} fill={this.props.fill} dashed={this.props.dashed} weight={this.props.weight} earase={this.state.earase} click={this.state.click}
                 key={this.state.count}
                 corner={this.props.cornerType}
@@ -310,9 +336,10 @@ export default class Content extends React.Component {
                 handleBoundryClick={this.handleBoundryClick}
                 updateLayout={this.handleLayoutUpdate}
                 deselect={this.handleDeselect}
+                rotatable={this.props.activeItem==="Triangle"}
             />
         } else if (activeItem === "Image")
-            element = <Shape file={this.props.file[0]} src={URL.createObjectURL(this.props.file[0])} x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} key={this.state.count}
+            element = <Shape file={this.props.file[0]} src={null} x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} key={this.state.count}
                 clickInside={this.handleClickInside}
                 id={this.state.count}
                 ref={ref}
@@ -348,7 +375,33 @@ export default class Content extends React.Component {
 
     }
     handleKeyDown(e) {
-        const scale = this.props.zoom
+        const scale = this.state.zoom
+        if (this.selected.length > 2) {
+            if (e.shiftKey) {
+                let loc = {}
+                this.selected.forEach(s => loc[s] = this.state.refs[s].current.getLocation())
+                const xs = Object.values(loc).map(l => l.x)
+                const ys = Object.values(loc).map(l => l.y)
+                const xs_ = Object.values(loc).map(l => l.x + l.w)
+                const ys_ = Object.values(loc).map(l => l.y + l.h)
+                const sorted = Object.keys(loc).sort(function (a, b) { return loc[a].x - loc[b].x })
+                if (e.key == 'v' || e.key == 'V'){
+                    const miny = Math.min(...ys)
+                    const maxy = Math.max(...ys_)
+                    const totalh = Object.values(loc).map(l => l.h).reduce((total, num) => total + num)
+                    const dis = (maxy - miny - totalh) / (this.selected.length-1)
+                    let offset = miny
+                    sorted.forEach((s,i) => {this.state.refs[s].current.setSize('y', offset + i * dis); offset+=(loc[s].h)})
+                } else if (e.key == 'h' || e.key == 'H') {
+                    const minx = Math.min(...xs)
+                    const maxx = Math.max(...xs_)
+                    const totalw = Object.values(loc).map(l => l.w).reduce((total, num) => total + num)
+                    const dis = (maxx - minx - totalw) / (this.selected.length-1)
+                    let offset = minx
+                    sorted.forEach((s,i) => {this.state.refs[s].current.setSize('x', offset + i * dis); offset+=(loc[s].w)})
+                }
+            }
+        }
         if (this.selected.length === 1) {
             if (e.key === "PageUp") {
                 let { elements } = this.state
@@ -397,6 +450,14 @@ export default class Content extends React.Component {
         if (e.shiftKey) this.selected.forEach(s => this.state.refs[s].current.handleAlign(dir, pos))
         else this.selected.forEach(s => this.state.refs[s].current.move(scale * dx, scale * dy))
     }
+    handlekeyUp(e) {
+        if (this.multiCopy.length > 0) {
+            console.log(this.multiCopy)
+            this.props.changeTool(null, 'Move')
+            this.multiCopy.forEach(c => this.select(c))
+            this.multiCopy = []
+        }
+    }
 
     handleShapeChange() {
         // console.log('shape change')
@@ -425,6 +486,7 @@ export default class Content extends React.Component {
         var serializer = new XMLSerializer();
         var source = serializer.serializeToString(svg);
         //add name spaces.
+        source = source.replace(/style="/, `style="background: ${this.state.bgColor};`);
         if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
             source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
         }
@@ -522,7 +584,7 @@ export default class Content extends React.Component {
                 // dangerouslySetInnerHTML={{ __html: '<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><g><g><rect x="336" y="149" width="95" height="68" stroke="black" stroke-width="3" fill="transparent"/></g></g><g/><g/></svg>' }}
                 >
                     <svg
-                        viewBox={`0 0 ${this.props.zoom * (this.offsetW)} ${this.props.zoom * (this.offsetH)}`}
+                        viewBox={`0 0 ${zoom * (this.offsetW)} ${zoom * (this.offsetH)}`}
                         ref={this.canvas}
                         width={this.offsetW} height={this.offsetH}
                         style={{ display: 'block' }}
@@ -531,6 +593,7 @@ export default class Content extends React.Component {
                         onMouseUp={this.handleMouseUp}
                         onMouseMove={this.handleMouseMove}
                         onKeyDown={e => this.handleKeyDown(e)}
+                        onKeyUp={this.handlekeyUp}
                         tabIndex={0}
                     >
                         <g>

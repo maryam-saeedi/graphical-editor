@@ -1,4 +1,5 @@
 import React from "react"
+import PropTypes from 'prop-types';
 
 class Shape extends React.Component {
     constructor(props) {
@@ -8,6 +9,7 @@ class Shape extends React.Component {
             y: this.props.y,
             w: this.props.shape === "Circle" ? Math.max(this.props.w, this.props.h) : this.props.w,
             h: this.props.shape === "Circle" ? Math.max(this.props.w, this.props.h) : this.props.h,
+            rotate: this.props.rotate,
             src: this.props.src,
             shape: this.props.shape,
             weight: this.props.weight,
@@ -23,18 +25,21 @@ class Shape extends React.Component {
         this.handleResize = this.handleResize.bind(this)
         this.handleMoving = this.handleMoving.bind(this)
         this.handleKeyDown = this.handleKeyDown.bind(this)
+        this.setSize = this.setSize.bind(this)
         this.move = this.move.bind(this)
         this.corner = 0
     }
 
     componentDidMount() {
-        if(this.props.shape !== "Image")
-        return 
+        if (this.props.shape !== "Image")
+            return
+        if (this.state.src)
+            return
         var reader = new FileReader();
         const self = this
         reader.onloadend = function () {
             const src = reader.result
-            self.setState({src})
+            self.setState({ src })
         }
         reader.readAsDataURL(this.props.file);
     }
@@ -44,21 +49,30 @@ class Shape extends React.Component {
         e.stopPropagation()
         this.setState({ layout: true, erase: this.props.earase })
         this.props.clickInside(this.props.id, e.ctrlKey)
+        this.corner = 0
     }
 
     updateStyle(prop, value) {
-        console.log('update style')
         return new Promise((resolve, reject) => {
-            this.setState({ [prop]: value }, () => { console.log(this.state); resolve(1) })
+            this.setState({ [prop]: value }, () => { resolve(1) })
 
         })
     }
-    getStyle(){
-        const {stroke, fill, width, dashed, corner, shadow, strong} = this.state
-        return {stroke, fill, width, dashed, corner, shadow, strong}
+    getStyle() {
+        const { stroke, fill, width, dashed, corner, shadow, strong } = this.state
+        return { stroke, fill, width, dashed, corner, shadow, strong }
     }
     getLocation() {
         return { x: this.state.x, y: this.state.y, w: this.state.w, h: this.state.h }
+    }
+    setSize(prop, value) {
+        const { updateLayout, id } = this.props
+        console.log(prop, value)
+        const self = this
+        return new Promise((resolve, reject) => {
+            this.setState({ [prop]: value }, () => { updateLayout(id, self.setBoundry(), this.state.w, this.state.h); resolve(1) })
+
+        })
     }
     setCorner(corner) {
         this.corner = corner
@@ -87,7 +101,9 @@ class Shape extends React.Component {
         }
     }
     handleMoving(dx, dy, dw = 0, dh = 0) {
+        const { x, y, w, h } = this.state
         this.setState({ x: this.state.x + dx, y: this.state.y + dy, w: this.state.w + dw, h: this.state.h + dh })
+        return { x: x + dx, y: y + dy, w: w + dw, h: h + dh }
     }
 
     handleKeyDown(e) {
@@ -95,6 +111,12 @@ class Shape extends React.Component {
     }
     move(movementX, movementY) {
         let dx = 0, dy = 0, dw = 0, dh = 0
+        if (this.corner === 5) {  //rotate
+            this.setState({ rotate: this.state.rotate + movementX })
+            this.props.updateLayout(this.props.id, this.setBoundry(), this.state.w + dw, this.state.h + dh)
+            this.isMoving = true
+            return
+        }
         if (this.corner === 1) {
             dx = movementX
             dy = movementY
@@ -135,10 +157,11 @@ class Shape extends React.Component {
         !this.isMoving && this.props.deselect(this.props.id)
     }
     setBoundry() {
-        const { x, y, w, h } = this.state
+        const { x, y, w, h, rotate } = this.state
         return (
-            <g onClick={e => e.stopPropagation()}>
+            <g onClick={e => e.stopPropagation()} transform-origin={`${x + w / 2}px ${y + h / 2}px`} style={{ transform: `rotate(${rotate}deg)` }}>
                 <rect x={x - 2} y={y - 2} width={w + 4} height={h + 4} stroke='gray' stroke-dasharray="5 5" fill='transparent' onMouseDown={this.handleBoundingMouseDown(0)} onClick={this.clickInBoundry} /> ,
+                {this.props.rotatable && <path d={`M ${x + w / 2 - 5} ${y - 10} A 7 7 0 1 1 ${x + w / 2 + 5} ${y - 10}`} stroke='red' fill='transparent' strokeWidth='2px' onMouseDown={this.handleBoundingMouseDown(5)} />}
                 <circle cx={x - 5} cy={y - 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(1)} /> ,
                 <circle cx={x - 5} cy={y + h + 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(2)} /> ,
                 <circle cx={x + w + 5} cy={y - 5} r="3" fill="gray" onMouseDown={this.handleBoundingMouseDown(3)} /> ,
@@ -147,17 +170,18 @@ class Shape extends React.Component {
         )
     }
     render() {
-        const { x, y, w, h } = this.state
+        const { x, y, w, h, rotate } = this.state
         const { shape, weight, stroke, dashed, corner, fill, shadow, strong } = this.state
         const element =
             shape === "Image" ? <image href={this.state.src} x={x} y={y} width={w} height={h} />
                 : (shape === "Rectangle" ? (corner == 'round' && w > 10 && h > 10 ? <path d={`M ${x} ${y + 5} q 0 -5 5 -5 h ${w - 10} q 5 0 5 5 v ${h - 10} q 0 5 -5 5 h -${w - 10} q -5 0 -5 -5 Z`} x={x} y={y} width={w} height={h} stroke={stroke} stroke-width={weight} fill={fill} strokeLinecap={corner} strokeLinejoin={corner} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} filter={shadow ? "url(#shadow2)" : ""} />
                     : <rect x={x} y={y} width={w} height={h} stroke={stroke} stroke-width={weight} fill={fill} strokeLinecap='round' strokeLinejoin={corner} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} filter={shadow ? "url(#shadow2)" : ""} />)
                     : (shape === "Circle" ? <circle cx={x + w / 2} cy={y + w / 2} r={w / 2} stroke={stroke} stroke-width={weight} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} fill={fill} filter={shadow ? "url(#shadow2)" : ""} />
-                        : <ellipse cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} stroke={stroke} stroke-width={weight} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} fill={fill} filter={shadow ? "url(#shadow2)" : ""} />))
+                        : (shape === "Triangle" ? <polygon points={`${x + w / 2},${y} ${x},${y + h} ${x + w},${y + h}`} stroke={stroke} stroke-width={weight} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} fill={fill} filter={shadow ? "url(#shadow2)" : ""} transform-origin={`${x + w / 2}px ${y + h / 2}px`} />
+                            : <ellipse cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} stroke={stroke} stroke-width={weight} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} fill={fill} filter={shadow ? "url(#shadow2)" : ""} />)))
         { if (this.state.erase) return null }
         return (
-            <g onClick={this.handleClick} onKeyDown={this.handleKeyDown} element='Shape' props={JSON.stringify(this.state)}>
+            <g onClick={this.handleClick} onKeyDown={this.handleKeyDown} element='Shape' props={JSON.stringify(this.state)} transform-origin={`${x + w / 2}px ${y + h / 2}px`} style={{ transform: `rotate(${rotate}deg)` }}>
                 <defs>
                     <filter id="shadow2" x="-50%" y="-50%" width="200%" height="200%">
                         <feGaussianBlur in="SourceAlpha" stdDeviation={strong} result="blur" />
@@ -176,9 +200,14 @@ class Shape extends React.Component {
                     <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
                 </filter> */}
                 {element}
-            </g>
+            </ g>
         )
     }
+}
+
+Shape.defaultProps = {
+    rotatable: false,
+    rotate: 0
 }
 
 export default Shape

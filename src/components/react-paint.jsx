@@ -17,6 +17,7 @@ import rectangle from "../images/rectangle.svg";
 import text from "../images/text.svg";
 import circle from "../images/circle.svg";
 import ellipse from "../images/ellipse.svg";
+import triangle from "../images/triangle.svg"
 import erase from "../images/erase.svg";
 import picker from "../images/picker.svg";
 import image from "../images/image.svg";
@@ -38,6 +39,7 @@ const toolbarItems = [
   { name: "Rectangle", image: rectangle },
   { name: "Circle", image: circle },
   { name: "Ellipse", image: ellipse },
+  { name: "Triangle", image: triangle },
   { name: "Erase", image: erase },
   // { name: "Picker", image: picker },
   { name: "Image", image: image },
@@ -52,6 +54,7 @@ const categories = {
   'Rectangle': 'Shape',
   'Circle': 'Shape',
   'Ellipse': 'Shape',
+  'Triangle': 'Shape',
   'Text': 'Text'
 }
 const defaultOption = {
@@ -66,6 +69,8 @@ const defaultOption = {
   font: "Times New Roman",
   size: 12,
   bold: false,
+  width: 0,
+  height: 0,
 }
 
 export default class ReactPaint extends React.Component {
@@ -83,6 +88,8 @@ export default class ReactPaint extends React.Component {
       font: "Times New Roman",
       size: 12,
       bold: false,
+      width: 0,
+      height: 0,
       selectedItem: defaultTool,
       currentItem: new Set([categories[defaultTool]]),
       defaultValues: defaultOption,
@@ -103,10 +110,12 @@ export default class ReactPaint extends React.Component {
   }
 
   selectItem(item, values) {
-    this.setState({ currentItem: item, defaultValues: {...this.state.defaultValues, ...values} })
+    item && this.setState({ currentItem: item })
+    this.setState({ defaultValues: { ...this.state.defaultValues, ...values } })
   }
   changeOption(target, value) {
-    this.setState({ [target]: value, defaultValues: {...this.state.defaultValues, [target]: value} })
+    console.log('change option ', target, value)
+    this.setState({ [target]: value, defaultValues: { ...this.state.defaultValues, [target]: value } })
   }
 
   handleFileBrowser(event) {
@@ -167,6 +176,8 @@ export default class ReactPaint extends React.Component {
           bold={this.state.bold}
           cornerType={this.state.corner}
           file={this.state.file}
+          width={this.state.width}
+          height={this.state.height}
           zoom={this.state.zoom}
           selectItem={this.selectItem}
         />

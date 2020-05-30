@@ -15,6 +15,8 @@ import cornerTypeIcon from "../images/corner.svg"
 import fontIcon from "../images/font.svg"
 import fontSizeIcon from "../images/font-size.svg"
 import boldIcon from "../images/bold.svg"
+import heightIcon from "../images/height.svg"
+import widthIcon from "../images/width.svg"
 import ColorPicker from "./color-panel"
 
 export default class Options extends React.Component {
@@ -24,6 +26,7 @@ export default class Options extends React.Component {
         }
         this.handleChangeSelect = this.handleChangeSelect.bind(this)
         this.handleCheckbox = this.handleCheckbox.bind(this)
+        this.handleChangeInput = this.handleChangeInput.bind(this)
     }
 
     handleChangeColor(item) {
@@ -57,9 +60,15 @@ export default class Options extends React.Component {
             handleChangeOption(item, !self.props[item])
         }
     }
+    handleChangeInput(item) {
+        const { handleChangeOption } = this.props
+        return function (event) {
+            handleChangeOption(item, parseInt(event.target.value))
+        }
+    }
     render() {
         const { activeItem } = this.props
-        const { corner, dashed, weight, strong, shadow, stroke, fill, zoom, font, size, bold } = this.props.defaultValues
+        const { corner, dashed, weight, strong, shadow, stroke, fill, zoom, font, size, bold, width, height } = this.props.defaultValues
         return (
             <div style={{ display: 'flex', padding: '0 0 12px' }}>
                 <div style={{ display: 'flex', flexDirection: 'row' }}>
@@ -127,6 +136,16 @@ export default class Options extends React.Component {
                                             max={25}
                                             style={{ width: '100px', margin: 'auto 20px 0 10px' }}
                                         />
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: widthIcon }} />
+                                        <Input type="number" value={width} onChange={this.handleChangeInput('width')} style={{ width: "70px" }} />
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: heightIcon }} />
+                                        <Input type="number" value={height} onChange={this.handleChangeInput('height')} style={{ width: "70px" }} />
                                     </div>
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center" }}>
