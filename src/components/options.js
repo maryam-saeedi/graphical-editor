@@ -138,7 +138,7 @@ export default class Options extends React.Component {
                                         />
                                     </div>
                                 </div>
-                                <div>
+                                {activeItem.has("Shape") && <div>
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
                                         <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: widthIcon }} />
                                         <Input type="number" value={width} onChange={this.handleChangeInput('width')} style={{ width: "70px" }} />
@@ -147,8 +147,8 @@ export default class Options extends React.Component {
                                         <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: heightIcon }} />
                                         <Input type="number" value={height} onChange={this.handleChangeInput('height')} style={{ width: "70px" }} />
                                     </div>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center" }}>
+                                </div>}
+                                <div style={{ display: "flex", alignItems: "center", margin: '0 20px' }}>
                                     <ColorPicker color={stroke} title="Outline" handleSetColor={this.handleChangeColor('stroke')} />
                                     {activeItem.has("Shape") && <ColorPicker color={fill} title="Fill" handleSetColor={this.handleChangeColor('fill')} />}
                                 </div>

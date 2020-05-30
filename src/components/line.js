@@ -58,6 +58,11 @@ class Line extends React.Component {
     getLocation() {
         return { x: this.box.x, y: this.box.y, w: this.box.width, h: this.box.height }
     }
+    setSize() {
+        return new Promise((resolve, reject) => {
+            reject(0)
+        })
+    }
     handleClick(e) {
         if (e.detail == 2)
             return

@@ -59,8 +59,8 @@ class Shape extends React.Component {
         })
     }
     getStyle() {
-        const { stroke, fill, width, dashed, corner, shadow, strong } = this.state
-        return { stroke, fill, width, dashed, corner, shadow, strong }
+        const { stroke, fill, width, dashed, corner, shadow, strong, w, h } = this.state
+        return { stroke, fill, width, dashed, corner, shadow, strong, width: w, height: h }
     }
     getLocation() {
         return { x: this.state.x, y: this.state.y, w: this.state.w, h: this.state.h }
@@ -112,7 +112,11 @@ class Shape extends React.Component {
     move(movementX, movementY) {
         let dx = 0, dy = 0, dw = 0, dh = 0
         if (this.corner === 5) {  //rotate
-            this.setState({ rotate: this.state.rotate + movementX })
+            if(movementY==0)    return
+            const { rotate } = this.state
+            const r = Math.max(this.state.w/2, this.state.h/2)
+            const ang = Math.atan2(Math.sqrt(Math.pow(movementX, 2) + Math.pow(movementY, 2)) , r)
+            this.setState({ rotate: rotate + (-1* Math.sign(Math.sign((rotate%360)/180-1)-0.01) * Math.sign(movementY) * (ang * 180 / Math.PI)) })
             this.props.updateLayout(this.props.id, this.setBoundry(), this.state.w + dw, this.state.h + dh)
             this.isMoving = true
             return

@@ -336,7 +336,7 @@ export default class Content extends React.Component {
                 handleBoundryClick={this.handleBoundryClick}
                 updateLayout={this.handleLayoutUpdate}
                 deselect={this.handleDeselect}
-                rotatable={this.props.activeItem==="Triangle"}
+                rotatable={this.props.activeItem === "Triangle"}
             />
         } else if (activeItem === "Image")
             element = <Shape file={this.props.file[0]} src={null} x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} key={this.state.count}
@@ -385,20 +385,20 @@ export default class Content extends React.Component {
                 const xs_ = Object.values(loc).map(l => l.x + l.w)
                 const ys_ = Object.values(loc).map(l => l.y + l.h)
                 const sorted = Object.keys(loc).sort(function (a, b) { return loc[a].x - loc[b].x })
-                if (e.key == 'v' || e.key == 'V'){
+                if (e.key == 'v' || e.key == 'V') {
                     const miny = Math.min(...ys)
                     const maxy = Math.max(...ys_)
                     const totalh = Object.values(loc).map(l => l.h).reduce((total, num) => total + num)
-                    const dis = (maxy - miny - totalh) / (this.selected.length-1)
+                    const dis = (maxy - miny - totalh) / (this.selected.length - 1)
                     let offset = miny
-                    sorted.forEach((s,i) => {this.state.refs[s].current.setSize('y', offset + i * dis); offset+=(loc[s].h)})
+                    sorted.forEach((s, i) => { this.state.refs[s].current.setSize('y', offset + i * dis); offset += (loc[s].h) })
                 } else if (e.key == 'h' || e.key == 'H') {
                     const minx = Math.min(...xs)
                     const maxx = Math.max(...xs_)
                     const totalw = Object.values(loc).map(l => l.w).reduce((total, num) => total + num)
-                    const dis = (maxx - minx - totalw) / (this.selected.length-1)
+                    const dis = (maxx - minx - totalw) / (this.selected.length - 1)
                     let offset = minx
-                    sorted.forEach((s,i) => {this.state.refs[s].current.setSize('x', offset + i * dis); offset+=(loc[s].w)})
+                    sorted.forEach((s, i) => { this.state.refs[s].current.setSize('x', offset + i * dis); offset += (loc[s].w) })
                 }
             }
         }
