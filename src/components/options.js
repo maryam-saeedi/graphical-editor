@@ -173,15 +173,18 @@ export default class Options extends React.Component {
                                 onChange={this.handleChangeSelect('size')}
                                 style={{ width: '50px', margin: '0 20px 0 10px' }}
                             >
-                                <MenuItem value={8}>8</MenuItem>
                                 <MenuItem value={10}>10</MenuItem>
-                                <MenuItem value={11}>11</MenuItem>
                                 <MenuItem value={12}>12</MenuItem>
                                 <MenuItem value={13}>13</MenuItem>
                                 <MenuItem value={14}>14</MenuItem>
                                 <MenuItem value={16}>16</MenuItem>
                                 <MenuItem value={18}>18</MenuItem>
                                 <MenuItem value={20}>20</MenuItem>
+                                <MenuItem value={20}>22</MenuItem>
+                                <MenuItem value={20}>24</MenuItem>
+                                <MenuItem value={20}>28</MenuItem>
+                                <MenuItem value={20}>32</MenuItem>
+                                <MenuItem value={20}>40</MenuItem>
                             </Select>
                             <IconButton style={{ padding: '5px', borderRadius: '5px', background: bold ? 'lightblue' : 'none' }}
                                 onClick={this.handleToggleButton('bold')}>
