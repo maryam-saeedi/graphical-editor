@@ -69,10 +69,11 @@ export default class Options extends React.Component {
     render() {
         const { activeItem } = this.props
         const { corner, dashed, weight, strong, shadow, stroke, fill, zoom, font, size, bold, width, height } = this.props.defaultValues
+        // console.log(activeItem, activeItem.size)
         return (
             <div style={{ display: 'flex', padding: '0 0 12px' }}>
-                <div style={{ display: 'flex', flexDirection: 'row' }}>
-                    {(activeItem.has("Shape") || activeItem.has("Line")) &&
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {(activeItem.size === 1 && activeItem.has("Shape") || activeItem.has("Line")) &&
                         [
                             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }} >
                                 <div style={{ display: "flex", alignItems: 'center' }}>
@@ -138,7 +139,7 @@ export default class Options extends React.Component {
                                         />
                                     </div>
                                 </div>
-                                {activeItem.has("Shape") && <div>
+                                {activeItem.has("Shape") && <div style={{display: 'flex'}}>
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
                                         <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: widthIcon }} />
                                         <Input type="number" value={width} onChange={this.handleChangeInput('width')} style={{ width: "70px" }} />
@@ -154,7 +155,7 @@ export default class Options extends React.Component {
                                 </div>
                             </div>
                         ]}
-                    {activeItem.has("Text") &&
+                    {activeItem.size === 1 && activeItem.has("Text") &&
                         <div style={{ display: "flex", flexDirection: 'row', alignItems: 'flex-end' }}>
                             <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: fontIcon }} />
                             <Select
@@ -180,11 +181,11 @@ export default class Options extends React.Component {
                                 <MenuItem value={16}>16</MenuItem>
                                 <MenuItem value={18}>18</MenuItem>
                                 <MenuItem value={20}>20</MenuItem>
-                                <MenuItem value={20}>22</MenuItem>
-                                <MenuItem value={20}>24</MenuItem>
-                                <MenuItem value={20}>28</MenuItem>
-                                <MenuItem value={20}>32</MenuItem>
-                                <MenuItem value={20}>40</MenuItem>
+                                <MenuItem value={22}>22</MenuItem>
+                                <MenuItem value={24}>24</MenuItem>
+                                <MenuItem value={28}>28</MenuItem>
+                                <MenuItem value={32}>32</MenuItem>
+                                <MenuItem value={40}>40</MenuItem>
                             </Select>
                             <IconButton style={{ padding: '5px', borderRadius: '5px', background: bold ? 'lightblue' : 'none' }}
                                 onClick={this.handleToggleButton('bold')}>

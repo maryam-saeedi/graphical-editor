@@ -129,7 +129,7 @@ export default class Content extends React.Component {
     }
     componentDidUpdate(prevProps, prevState) {
         const { dashed, weight, cornerType, stroke, fill, shadow, strong, font, size, bold, width, height } = this.props
-        if (this.props.activeItem != prevProps.activeItem && (this.props.activeItem == "Erase" || this.props.activeItem == "Copy")) {
+        if (this.props.activeItem != prevProps.activeItem && this.props.activeItem !== "Move") {
             this.selected = []
             this.setState({ boundingBox: {} })
         }
@@ -243,12 +243,12 @@ export default class Content extends React.Component {
             const { elements, refs, count } = this.state
             const { changeTool } = this.props
             const ref = React.createRef()
-            const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { ...refs[id].current.state, id: count, ref: ref, key: count })
+            const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { ...refs[id].current.state, x: refs[id].current.state.x + 10, y: refs[id].current.state.y + 10, id: count, ref: ref, key: count })
             refs[count] = ref
             if (ctrl) {
                 this.multiCopy.push(count)
             }
-            this.setState({ elements: [...this.state.elements, { id: count, e: newE }], refs, count: count + 1 }, () => { if (ctrl) return; changeTool(null, "Move"); this.handleClickInside(count) })
+            this.setState({ elements: [...this.state.elements, { id: count, e: newE }], refs, count: count + 1 }, () => { if (ctrl) return; changeTool(null, "Move"); this.select(count) })
         }
     }
 
@@ -268,36 +268,20 @@ export default class Content extends React.Component {
         this.props.selectItem(null, { 'width': w, 'height': h })
     }
     handleClick(e) {
-        const { refs, zoom } = this.state
-        const { activeItem } = this.props
-        const scale = zoom
-        let element = null
-        this.item = {}
-        this.setState({ boundingBox: {} })
-        this.selected = []
 
-        if (activeItem === "Text") {
-            const ref = React.createRef()
-            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)}
-                text="" size={this.props.size}
-                stroke={this.props.stroke} fill={this.props.fill}
-                font={this.props.font} bold={this.props.bold}
-                ref={ref} id={this.state.count} key={this.state.count}
-                clickInside={this.handleClickInside}
-                handleBoundryClick={this.handleBoundryClick}
-                addLogic={this.handleAddLogic}
-                changeShape={this.handleShapeChange}
-                deselect={this.handleDeselect}
-                updateLayout={this.handleLayoutUpdate} />
-            if (element) {
-                refs[this.state.count] = ref
-                this.setState({
-                    elements: [...this.state.elements, { id: this.state.count, e: element }],
-                    refs,
-                    count: this.state.count + 1
-                })
-            }
+        if (this.props.activeItem === "Move") {
+            this.selected = []
+            this.setState({ boundingBox: {} })
+            this.props.selectItem(new Set(), {})
         }
+        this.setState({ startX: null, startY: null })
+        if (this.isDrawing || this.isMoving) {
+            this.snapshot()
+            this.props.changeTool(null, 'Move')
+            this.select(this.currentItem)
+            this.isDrawing = false
+        }
+
     }
     handleMouseDown(e) {
         const { refs, zoom } = this.state
@@ -306,7 +290,7 @@ export default class Content extends React.Component {
         const scale = zoom
         let element = null
         this.setState({ startX: e.clientX - this.offsetX, startY: e.clientY - this.offsetY })
-        if (activeItem === "Move" || activeItem === "Text" || activeItem === "Erase" || activeItem === "Copy")
+        if (activeItem === "Move" || activeItem === "Erase" || activeItem === "Copy")
             return
         if (activeItem === "Line" || activeItem === "Arrow" || activeItem === "Bridge")
             element = <Line
@@ -347,7 +331,19 @@ export default class Content extends React.Component {
                 updateLayout={this.handleLayoutUpdate}
                 deselect={this.handleDeselect}
             />
-
+        if (activeItem === "Text") {
+            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)}
+                size={this.props.size}
+                stroke={this.props.stroke} fill={this.props.fill}
+                font={this.props.font} bold={this.props.bold}
+                ref={ref} id={this.state.count} key={this.state.count}
+                clickInside={this.handleClickInside}
+                handleBoundryClick={this.handleBoundryClick}
+                addLogic={this.handleAddLogic}
+                changeShape={this.handleShapeChange}
+                deselect={this.handleDeselect}
+                updateLayout={this.handleLayoutUpdate} />
+        }
         this.isDrawing = true
         this.currentItem = this.state.count
         if (element) {
@@ -360,19 +356,8 @@ export default class Content extends React.Component {
         }
     }
     handleMouseUp(e) {
-        const { activeItem } = this.props
-        let element = null
-
-        this.setState({ startX: null, startY: null })
-        if (this.isDrawing || this.isResizing || this.isLining || this.isMoving) {
-            this.snapshot()
-        }
-        this.isDrawing = false
-        this.isResizing = false
         this.isMoving = false
-        this.isLining = false
         this.resizedItem = null
-
     }
     handleKeyDown(e) {
         const scale = this.state.zoom
@@ -452,7 +437,6 @@ export default class Content extends React.Component {
     }
     handlekeyUp(e) {
         if (this.multiCopy.length > 0) {
-            console.log(this.multiCopy)
             this.props.changeTool(null, 'Move')
             this.multiCopy.forEach(c => this.select(c))
             this.multiCopy = []
@@ -460,7 +444,6 @@ export default class Content extends React.Component {
     }
 
     handleShapeChange() {
-        // console.log('shape change')
         this.snapshot()
     }
     snapshot() {
@@ -548,12 +531,14 @@ export default class Content extends React.Component {
         this.currentState--
         // console.log('undo', this.currentState, this.history.el.map(e => e[0] && e[0].e.props.path.map(p => p.join(" ")).join(" ")),
         //     this.history.el[this.currentState][0].e.props.path.map(p => p.join(" ")).join(" "))
+        console.log(this.history.ref[this.currentState])
         this.setState({ elements: [], refs: [], boundingBox: [] },
             () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
     }
     handleRedo() {
         if (this.currentState > this.history.el.length - 2) return
         this.currentState++
+        // console.log('redo', this.history.ref[this.currentState] )
         this.setState({ elements: [], refs: [], boundingBox: [] },
             () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
     }
@@ -570,7 +555,7 @@ export default class Content extends React.Component {
 
     render() {
         const { elements, boundingBox, open, positionX, positionY, startX, startY, objectW, objectH, zoom, bgColor } = this.state
-        // console.log(bgColor)
+        // console.log(boundingBox)
 
         return (
             <div
@@ -587,7 +572,7 @@ export default class Content extends React.Component {
                         viewBox={`0 0 ${zoom * (this.offsetW)} ${zoom * (this.offsetH)}`}
                         ref={this.canvas}
                         width={this.offsetW} height={this.offsetH}
-                        style={{ display: 'block' }}
+                        style={{ display: 'block', outline: 'none' }}
                         onClick={this.handleClick}
                         onMouseDown={this.handleMouseDown}
                         onMouseUp={this.handleMouseUp}

@@ -31,12 +31,11 @@ class Text extends React.Component {
     }
 
     componentDidMount() {
-        this.box = this.child.current.getBBox()
+        this.box = this.child.current.getBoundingClientRect()
     }
     componentDidUpdate(prevProps, prevState) {
-        //     this.setState({ box: this.child.current.getBBox() })
-        if (!this.box || this.box.x != this.child.current.getBBox().x || this.box.y != this.child.current.getBBox().y || this.box.width != this.child.current.getBBox().width || this.box.height != this.child.current.getBBox().height) {
-            this.box = this.child.current.getBBox()
+        if (!this.box || this.box.width != this.child.current.getBoundingClientRect().width || this.box.height != this.child.current.getBoundingClientRect().height) {
+            this.box = this.child.current.getBoundingClientRect()
             this.forceUpdate()
             return true
         }
@@ -78,6 +77,7 @@ class Text extends React.Component {
     handleClick(e) {
         this.props.clickInside(this.props.id)
         e.stopPropagation()
+        this.setState({ edit: true })
     }
     handleMoving(dx, dy, dw = 0, dh = 0) {
         this.setState({ x: this.state.x + dx, y: this.state.y + dy })
@@ -113,9 +113,10 @@ class Text extends React.Component {
     }
 
     setBoundry() {
+        this.setState({ edit: true })
         return (
             <g>
-                <rect x={this.box.x - 5} y={this.box.y - 5} width={this.box.width + 10} height={this.box.height + 10}
+                <rect x={this.state.x - 5} y={this.state.y - 5} width={this.box.width + 10} height={(this.box.height ? this.box.height : 10) + 10}
                     stroke='gray' stroke-dasharray="5 5" fill='transparent'
                     onMouseDown={this.handleMouseDown}
                     onClick={this.clickInBoundry} />
@@ -134,14 +135,14 @@ class Text extends React.Component {
                         <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
                     </filter>
                 </defs> */}
-                {this.box && <rect x={this.box.x} y={this.box.y} width={this.box.width} height={this.box.height} fill={fill} stroke="none" />}
+                {this.box && <rect x={this.state.x} y={this.state.y} width={this.box.width} height={this.box.height} fill={fill} stroke="none" />}
                 <text x={x} y={y + 15} fontFamily={font} fontSize={size} fontWeight={bold ? 'bold' : 'normal'} fill={stroke} ref={this.child}>{text}</text>
                 {edit && <foreignObject x={x - 5} y={y - 5} width="100" height="30">
 
                     <input
                         autoFocus={edit} onChange={this.handleText} onBlur={this.handleBlur} onFocus={this.handleFocus}
-                        placeholder="text"
-                        style={{ width: `calc(100% - 10px)`, padding: '5px', border: 'None', color: { stroke }, fontSize: `${size}px`, fontFamily: { font }, outline: 'gray dashed 2px', background: 'transparent', color: 'transparent' }}
+                        // placeholder="text"
+                        style={{ width: `calc(100% - 10px)`, padding: '5px', border: 'None', color: { stroke }, fontSize: `${size}px`, fontFamily: { font }, outline: 'none', background: 'transparent', color: 'transparent' }}
                     />
                 </foreignObject>}
             </g>
@@ -150,7 +151,8 @@ class Text extends React.Component {
 }
 
 Text.defaultProps = {
-    edit: true
+    edit: true,
+    text: ' '
 }
 
 export default Text

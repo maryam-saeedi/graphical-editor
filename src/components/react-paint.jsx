@@ -93,6 +93,7 @@ export default class ReactPaint extends React.Component {
       selectedItem: defaultTool,
       currentItem: new Set([categories[defaultTool]]),
       defaultValues: defaultOption,
+      currentValues: defaultOption,
       toolbarItems: toolbarItems
     };
     this.changeTool = this.changeTool.bind(this);
@@ -111,11 +112,10 @@ export default class ReactPaint extends React.Component {
 
   selectItem(item, values) {
     item && this.setState({ currentItem: item })
-    this.setState({ defaultValues: { ...this.state.defaultValues, ...values } })
+    this.setState({ currentValues: { ...this.state.defaultValues, ...values } })
   }
   changeOption(target, value) {
-    console.log('change option ', target, value)
-    this.setState({ [target]: value, defaultValues: { ...this.state.defaultValues, [target]: value } })
+    this.setState({ [target]: value, defaultValues: { ...this.state.defaultValues, [target]: value }, currentValues: { ...this.state.defaultValues, [target]: value } })
   }
 
   handleFileBrowser(event) {
@@ -150,7 +150,7 @@ export default class ReactPaint extends React.Component {
             handleChangeOption={this.changeOption}
             stroke={this.state.stroke}
             fill={this.state.fill}
-            defaultValues={this.state.defaultValues}
+            defaultValues={this.state.currentValues}
             style={{ height: "50px" }}
           />
           {/* <div style={{ width: '1px', borderRight: '1px solid gray', margin: '10px 20px' }} /> */}

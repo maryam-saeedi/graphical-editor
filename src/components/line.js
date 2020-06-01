@@ -140,6 +140,7 @@ class Line extends React.Component {
     move(dx, dy) {
         let { points, path } = this.state
         const idx = this.anchor
+        this.isMoving = true
         if (idx == -1) {    // move whole line
             points = points.map(p => [p[0] + dx, p[1] + dy])
             path = path.map(p => { p.splice(1, 2, p[1] + dx, p[2] + dy); if (p.length > 3) { p.splice(9, 2, p[9] + dx, p[10] + dy); p.splice(12, 2, p[12] + dx, p[13] + dy); } return p })
@@ -179,7 +180,6 @@ class Line extends React.Component {
             }
         })
         this.props.updateLayout(this.props.id, this.setBoundry())
-        this.isMoving = true
     }
     handleCanvasUp() {
         this.isAdding = false
