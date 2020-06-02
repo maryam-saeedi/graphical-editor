@@ -196,6 +196,7 @@ export default class Content extends React.Component {
             // this.state.refs[this.resizedItem].current.move(scale * e.movementX, scale * e.movementY)
             const corner = this.state.refs[this.resizedItem].current.getCorner()
             this.selected.forEach(s => { this.state.refs[s].current.setCorner(corner); this.state.refs[s].current.move(scale * e.movementX, scale * e.movementY) })
+            this.isMoving = true
         }
         if (this.isDrawing) {
             const { x, y, w, h } = this.state.refs[this.currentItem].current.handleMoving(0, 0, scale * e.movementX, scale * e.movementY)
@@ -205,7 +206,7 @@ export default class Content extends React.Component {
     }
     handleBoundryClick(id) {
         this.resizedItem = id
-        this.isMoving = true
+        // this.isMoving = true
         // this.setState({ startX: this.state.refs[id].state.x, startY: this.state.refd[id].state.y })
     }
     handleDeselect(id) {
@@ -268,15 +269,14 @@ export default class Content extends React.Component {
         this.props.selectItem(null, { 'width': w, 'height': h })
     }
     handleClick(e) {
-
         if (this.props.activeItem === "Move") {
             this.selected = []
             this.setState({ boundingBox: {} })
             this.props.selectItem(new Set(), {})
+            return
         }
         this.setState({ startX: null, startY: null })
-        if (this.isDrawing || this.isMoving) {
-            this.snapshot()
+        if (this.isDrawing || this.isMoving || this.isTexting) {
             this.props.changeTool(null, 'Move')
             this.select(this.currentItem)
             this.isDrawing = false
@@ -290,7 +290,7 @@ export default class Content extends React.Component {
         const scale = zoom
         let element = null
         this.setState({ startX: e.clientX - this.offsetX, startY: e.clientY - this.offsetY })
-        if (activeItem === "Move" || activeItem === "Erase" || activeItem === "Copy")
+        if (activeItem === "Move" || activeItem === "Erase" || activeItem === "Copy" || activeItem === "Text")
             return
         if (activeItem === "Line" || activeItem === "Arrow" || activeItem === "Bridge")
             element = <Line
@@ -331,19 +331,6 @@ export default class Content extends React.Component {
                 updateLayout={this.handleLayoutUpdate}
                 deselect={this.handleDeselect}
             />
-        if (activeItem === "Text") {
-            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)}
-                size={this.props.size}
-                stroke={this.props.stroke} fill={this.props.fill}
-                font={this.props.font} bold={this.props.bold}
-                ref={ref} id={this.state.count} key={this.state.count}
-                clickInside={this.handleClickInside}
-                handleBoundryClick={this.handleBoundryClick}
-                addLogic={this.handleAddLogic}
-                changeShape={this.handleShapeChange}
-                deselect={this.handleDeselect}
-                updateLayout={this.handleLayoutUpdate} />
-        }
         this.isDrawing = true
         this.currentItem = this.state.count
         if (element) {
@@ -356,8 +343,40 @@ export default class Content extends React.Component {
         }
     }
     handleMouseUp(e) {
+        if (this.isDrawing || this.isMoving || this.isTexting) {
+            this.snapshot()
+            this.isTexting = false
+        }
         this.isMoving = false
         this.resizedItem = null
+
+        const { refs } = this.state
+        const ref = React.createRef()
+        const scale = this.props.zoom
+        let element = null
+        if (this.props.activeItem === "Text") {
+            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)}
+                size={this.props.size}
+                stroke={this.props.stroke} fill={this.props.fill}
+                font={this.props.font} bold={this.props.bold}
+                ref={ref} id={this.state.count} key={this.state.count}
+                clickInside={this.handleClickInside}
+                handleBoundryClick={this.handleBoundryClick}
+                addLogic={this.handleAddLogic}
+                // changeShape={this.handleShapeChange}
+                deselect={this.handleDeselect}
+                updateLayout={this.handleLayoutUpdate} />
+            this.isTexting = true
+            this.currentItem = this.state.count
+        }
+        if (element) {
+            refs[this.state.count] = ref
+            this.setState({
+                elements: [...this.state.elements, { id: this.state.count, e: element }],
+                refs,
+                count: this.state.count + 1
+            })
+        }
     }
     handleKeyDown(e) {
         const scale = this.state.zoom
@@ -377,6 +396,7 @@ export default class Content extends React.Component {
                     const dis = (maxy - miny - totalh) / (this.selected.length - 1)
                     let offset = miny
                     sorted.forEach((s, i) => { this.state.refs[s].current.setSize('y', offset + i * dis); offset += (loc[s].h) })
+                    this.snapshot()
                 } else if (e.key == 'h' || e.key == 'H') {
                     const minx = Math.min(...xs)
                     const maxx = Math.max(...xs_)
@@ -384,6 +404,7 @@ export default class Content extends React.Component {
                     const dis = (maxx - minx - totalw) / (this.selected.length - 1)
                     let offset = minx
                     sorted.forEach((s, i) => { this.state.refs[s].current.setSize('x', offset + i * dis); offset += (loc[s].w) })
+                    this.snapshot()
                 }
             }
         }
@@ -434,6 +455,8 @@ export default class Content extends React.Component {
         }
         if (e.shiftKey) this.selected.forEach(s => this.state.refs[s].current.handleAlign(dir, pos))
         else this.selected.forEach(s => this.state.refs[s].current.move(scale * dx, scale * dy))
+        if (dx != 0 || dy != 0)
+            this.snapshot()
     }
     handlekeyUp(e) {
         if (this.multiCopy.length > 0) {
@@ -445,8 +468,10 @@ export default class Content extends React.Component {
 
     handleShapeChange() {
         this.snapshot()
+        this.isTexting = false
     }
     snapshot() {
+        // console.log('snapshot', this.currentState)
         if (this.currentState < this.history.el.length - 1) {
             this.history.el = this.history.el.slice(0, this.currentState + 1)
             this.history.ref = this.history.ref.slice(0, this.currentState + 1)
@@ -531,14 +556,14 @@ export default class Content extends React.Component {
         this.currentState--
         // console.log('undo', this.currentState, this.history.el.map(e => e[0] && e[0].e.props.path.map(p => p.join(" ")).join(" ")),
         //     this.history.el[this.currentState][0].e.props.path.map(p => p.join(" ")).join(" "))
-        console.log(this.history.ref[this.currentState])
+        // console.log('undo', this.history.ref[this.currentState], this.currentState)
         this.setState({ elements: [], refs: [], boundingBox: [] },
             () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
     }
     handleRedo() {
         if (this.currentState > this.history.el.length - 2) return
         this.currentState++
-        // console.log('redo', this.history.ref[this.currentState] )
+        // console.log('redo', this.history.ref[this.currentState])
         this.setState({ elements: [], refs: [], boundingBox: [] },
             () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
     }

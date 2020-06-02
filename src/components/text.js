@@ -152,7 +152,8 @@ class Text extends React.Component {
 
 Text.defaultProps = {
     edit: true,
-    text: ' '
+    text: ' ',
+    changeShape: () => {}
 }
 
 export default Text
