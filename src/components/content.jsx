@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { createElement } from 'react'
 import { withStyles, makeStyles } from '@material-ui/core/styles';
 import ReactHtmlParser, { processNodes, convertNodeToElement, htmlparser2 } from 'react-html-parser';
+import cloneDeep from 'lodash/cloneDeep'
 
 import { serialize } from 'react-serialize'
 
@@ -112,7 +113,7 @@ export default class Content extends React.Component {
         ]
 
         this.item = {}
-        this.history = { el: [[]], ref: [[]] }
+        this.history = []
         this.currentState = 0
         this.offsetW = "100%"
         this.offsetH = "100%"
@@ -471,23 +472,12 @@ export default class Content extends React.Component {
         this.isTexting = false
     }
     snapshot() {
-        // console.log('snapshot', this.currentState)
-        if (this.currentState < this.history.el.length - 1) {
-            this.history.el = this.history.el.slice(0, this.currentState + 1)
-            this.history.ref = this.history.ref.slice(0, this.currentState + 1)
+        if (this.currentState < this.history.length - 1) {
+            this.history = this.history.slice(0, this.currentState + 1)
         }
-        this.history.el.push(this.state.elements.map(el => {
-            let newProps = {};
-            Object.keys(el.e.ref.current.state).forEach(p => {
-                if (el.e.ref.current.state[p] instanceof Array) newProps[p] = JSON.parse(JSON.stringify(el.e.ref.current.state[p]))
-                else newProps[p] = el.e.ref.current.state[p]
-            })
-            newProps['key'] = el.id
-            return ({ id: el.id, e: React.cloneElement(el.e, newProps) })
-        }))
-        this.history.ref.push(this.state.refs)
+
+        this.history.push(this.state.elements.map(e => { return ({ id: e.id, type: e.e.type, ref: e.e.ref, state: JSON.stringify(e.e.ref.current.state), props: e.e.ref.current.props }) }))
         this.currentState++
-        // console.log(this.history.el, this.state.elements.length)
     }
     handleSave() {
         var svg = this.canvas.current
@@ -554,18 +544,18 @@ export default class Content extends React.Component {
     handleUndo() {
         if (this.currentState < 1) return
         this.currentState--
-        // console.log('undo', this.currentState, this.history.el.map(e => e[0] && e[0].e.props.path.map(p => p.join(" ")).join(" ")),
-        //     this.history.el[this.currentState][0].e.props.path.map(p => p.join(" ")).join(" "))
-        // console.log('undo', this.history.ref[this.currentState], this.currentState)
+        const elements = this.history[this.currentState].map((s, i) => ({ id: s.id, e: React.createElement(s.type, { ...s.props, ...JSON.parse(s.state), key: s.id, ref: s.ref }) }))
+        const refs = this.history[this.currentState].map(s => s.ref)
         this.setState({ elements: [], refs: [], boundingBox: [] },
-            () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
+            () => this.setState({ elements, refs }))
     }
     handleRedo() {
-        if (this.currentState > this.history.el.length - 2) return
+        if (this.currentState > this.history.length - 2) return
         this.currentState++
-        // console.log('redo', this.history.ref[this.currentState])
+        const elements = this.history[this.currentState].map((s, i) => ({ id: s.id, e: React.createElement(s.type, { ...s.props, ...JSON.parse(s.state), key: s.id, ref: s.ref }) }))
+        const refs = this.history[this.currentState].map(s => s.ref)
         this.setState({ elements: [], refs: [], boundingBox: [] },
-            () => this.setState({ elements: this.history.el[this.currentState], refs: this.history.ref[this.currentState] }))
+            () => this.setState({ elements, refs }))
     }
 
     handleClose() {
@@ -580,7 +570,7 @@ export default class Content extends React.Component {
 
     render() {
         const { elements, boundingBox, open, positionX, positionY, startX, startY, objectW, objectH, zoom, bgColor } = this.state
-        // console.log(boundingBox)
+        // console.log(elements[0])
 
         return (
             <div

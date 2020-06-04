@@ -70,13 +70,6 @@ class Line extends React.Component {
         this.setState({ layout: true })
         e.preventDefault()
         e.stopPropagation()
-        const { points } = this.state
-        let inter = []
-        this.state.path.forEach((p, i) => {
-            if (i > 0 && !p.includes("A")) {
-                inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] });
-            }
-        })
         this.setBoundry()
         this.props.clickInside(this.props.id)
     }
@@ -91,12 +84,6 @@ class Line extends React.Component {
             points.splice(idx + 1, 0, [(points[idx][0] + points[idx + 1][0]) / 2, (points[idx][1] + points[idx + 1][1]) / 2])
             path.splice(idx + 1, 0, ["L"].concat(points[idx + 1]))
             self.setState({ points, path })
-            let inter = []
-            path.map((p, i) => {
-                if (i > 0 && !p.includes("A")) {
-                    inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
-                }
-            })
             self.props.updateLayout(self.props.id, self.setBoundry())
             // self.props.changeShape()
         }
@@ -171,14 +158,7 @@ class Line extends React.Component {
                 }
             }
         }
-        // }
         this.setState({ points, path })
-        let inter = []
-        path.map((p, i) => {
-            if (i > 0 && !p.includes("A")) {
-                inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
-            }
-        })
         this.props.updateLayout(this.props.id, this.setBoundry())
     }
     handleCanvasUp() {
@@ -197,12 +177,6 @@ class Line extends React.Component {
                 ["L", points[idx + 1][0] + 10 * Math.cos(ang), points[idx + 1][1] + 10 * Math.sin(ang), "A", 10, 10, ang * 180 / Math.PI, 0, 1, points[idx + 2][0] - 10 * Math.cos(ang), points[idx + 2][1] - 10 * Math.sin(ang), "L", points[idx + 2][0], points[idx + 2][1]],
                 ["L", points[idx + 3][0], points[idx + 3][1]])
             self.setState({ points, path })
-            let inter = []
-            path.map((p, i) => {
-                if (i > 0 && !p.includes("A")) {
-                    inter.push({ id: i - 1, p: [(points[i - 1][0] + points[i][0]) / 2, (points[i - 1][1] + points[i][1]) / 2] })
-                }
-            })
             self.props.updateLayout(self.props.id, self.setBoundry())
             self.props.changeShape()
         }
