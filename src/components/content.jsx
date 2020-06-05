@@ -120,6 +120,10 @@ export default class Content extends React.Component {
         this.move = null
         this.selected = []
         this.multiCopy = []
+        this.isMouseUp = false
+        this.isMoving = false
+        this.isDrawing = false
+        this.isTexting = false
     }
 
     componentDidMount() {
@@ -234,6 +238,8 @@ export default class Content extends React.Component {
     }
     handleClickInside(id, ctrl = false) {
         if (this.props.activeItem === "Move") {
+            if (this.isMouseUp) return
+            this.currentItem = id
             this.select(id)
         }
         else if (this.props.activeItem === "Erase") {
@@ -270,19 +276,13 @@ export default class Content extends React.Component {
         this.props.selectItem(null, { 'width': w, 'height': h })
     }
     handleClick(e) {
-        if (this.props.activeItem === "Move") {
+        if (!this.isMouseUp) {
             this.selected = []
             this.setState({ boundingBox: {} })
             this.props.selectItem(new Set(), {})
             return
         }
         this.setState({ startX: null, startY: null })
-        if (this.isDrawing || this.isMoving || this.isTexting) {
-            this.props.changeTool(null, 'Move')
-            this.select(this.currentItem)
-            this.isDrawing = false
-        }
-
     }
     handleMouseDown(e) {
         const { refs, zoom } = this.state
@@ -290,6 +290,7 @@ export default class Content extends React.Component {
         const ref = React.createRef()
         const scale = zoom
         let element = null
+        this.isMouseUp = false
         this.setState({ startX: e.clientX - this.offsetX, startY: e.clientY - this.offsetY })
         if (activeItem === "Move" || activeItem === "Erase" || activeItem === "Copy" || activeItem === "Text")
             return
@@ -347,6 +348,10 @@ export default class Content extends React.Component {
         if (this.isDrawing || this.isMoving || this.isTexting) {
             this.snapshot()
             this.isTexting = false
+            this.isDrawing = false
+            this.props.changeTool(null, 'Move')
+            this.select(this.currentItem)
+            this.isMouseUp = true
         }
         this.isMoving = false
         this.resizedItem = null
