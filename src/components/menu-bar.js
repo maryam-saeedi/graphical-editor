@@ -1,6 +1,8 @@
 import React from "react";
 import { withStyles } from "@material-ui/core";
 
+import IconButton from '@material-ui/core/IconButton';
+
 const style = {
   menubar: {
     backgroundColor: 'white',
@@ -53,11 +55,13 @@ const Button = props => {
 
   const { classes } = props
   return (
-    <div
-      className={classes.button}
-      dangerouslySetInnerHTML={style}
-      onClick={e => props.handleClick(e, props.name)}
-    />
+    <IconButton
+            className={props.active ? classes.selected : classes.button}
+            // dangerouslySetInnerHTML={style}
+            onClick={e => props.handleClick(e, props.name)}
+        >
+        <img src={props.image} />
+        </IconButton>
   );
 };
 const StyledButton = withStyles(bStyle)(Button)

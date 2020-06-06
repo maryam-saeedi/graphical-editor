@@ -77,7 +77,8 @@ export default class Options extends React.Component {
                         [
                             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }} >
                                 <div style={{ display: "flex", alignItems: 'center' }}>
-                                    <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: cornerTypeIcon }} />
+                                    {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: cornerTypeIcon }} /> */}
+                                    <img src={cornerTypeIcon} />
                                     <Select
                                         value={corner}
                                         onChange={this.handleChangeSelect('corner')}
@@ -88,7 +89,8 @@ export default class Options extends React.Component {
                                     </Select>
                                 </div>
                                 <div style={{ display: "flex", alignItems: 'center' }}>
-                                    <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: lineTypeIcon }} />
+                                    {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: lineTypeIcon }} /> */}
+                                    <img src={lineTypeIcon} />
                                     <Select
                                         value={dashed}
                                         onChange={this.handleChangeSelect('dashed')}
@@ -100,7 +102,8 @@ export default class Options extends React.Component {
                                     </Select>
                                 </div>
                                 <div style={{ display: "flex", alignItems: 'center' }}>
-                                    <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: lineWeight }} />
+                                    {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: lineWeight }} /> */}
+                                    <img src={lineWeight} />
                                     <Slider
                                         value={typeof weight === 'number' ? weight : 0}
                                         onChange={this.handleChangeSlider('weight')}
@@ -139,13 +142,15 @@ export default class Options extends React.Component {
                                         />
                                     </div>
                                 </div>
-                                {activeItem.has("Shape") && <div style={{display: 'flex'}}>
+                                {activeItem.has("Shape") && <div style={{display: 'flex', flexDirection: 'column'}}>
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                                        <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: widthIcon }} />
+                                        {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: widthIcon }} /> */}
+                                        <img src={widthIcon} />
                                         <Input type="number" value={width} onChange={this.handleChangeInput('width')} style={{ width: "70px" }} />
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                                        <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: heightIcon }} />
+                                        {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: heightIcon }} /> */}
+                                        <img src={heightIcon}/>
                                         <Input type="number" value={height} onChange={this.handleChangeInput('height')} style={{ width: "70px" }} />
                                     </div>
                                 </div>}
@@ -157,7 +162,8 @@ export default class Options extends React.Component {
                         ]}
                     {activeItem.size === 1 && activeItem.has("Text") &&
                         <div style={{ display: "flex", flexDirection: 'row', alignItems: 'flex-end' }}>
-                            <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: fontIcon }} />
+                            {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: fontIcon }} /> */}
+                            <img src={fontIcon}/>
                             <Select
                                 value={font}
                                 onChange={this.handleChangeSelect('font')}
@@ -166,7 +172,8 @@ export default class Options extends React.Component {
                                 <MenuItem value={"Times New Roman"}>Times New Roman</MenuItem>
                                 <MenuItem value={"Comic Sans MS"}>Comic Sans MS</MenuItem>
                             </Select>
-                            <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: fontSizeIcon }} />
+                            {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: fontSizeIcon }} /> */}
+                            <img src={fontSizeIcon}/>
                             <Select
                                 labelId="demo-simple-select-helper-label"
                                 id="demo-simple-select-helper"
@@ -189,7 +196,8 @@ export default class Options extends React.Component {
                             </Select>
                             <IconButton style={{ padding: '5px', borderRadius: '5px', background: bold ? 'lightblue' : 'none' }}
                                 onClick={this.handleToggleButton('bold')}>
-                                <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: boldIcon }} />
+                                {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: boldIcon }} /> */}
+                                <img src={boldIcon}/>
                             </IconButton>
                             {/* <Checkbox
                                 checked={bold}

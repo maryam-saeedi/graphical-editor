@@ -3,6 +3,7 @@ import { renderToString } from 'react-dom/server'
 import { serialize } from 'react-serialize'
 import Options from "./options";
 import Toolbox from "./toolbox";
+import Menu from "./menu"
 import Content from "./content";
 import ColorPanel from "./color-panel";
 
@@ -27,6 +28,16 @@ import resize from "../images/resize.svg";
 import arrow from "../images/arrow.svg";
 import bridge from "../images/bridge.svg"
 import copy from "../images/copy.svg"
+import align from "../images/align.svg"
+import align_top from "../images/align_top.svg"
+import align_bottom from "../images/align_bottom.svg"
+import align_right from "../images/align_right.svg"
+import align_left from "../images/align_left.svg"
+import dist_horizontal from "../images/distribute_horizontal.svg"
+import dist_vertical from "../images/distribute_vertical.svg"
+import arrange from "../images/arrange.svg"
+import bring_front from "../images/bring_front.svg"
+import send_back from "../images/send_back.svg"
 
 const toolbarItems = [
   // { name: "Pencil", image: pencil },
@@ -48,6 +59,25 @@ const toolbarItems = [
   { name: "Move", image: resize },
   { name: "Copy", image: copy },
 ];
+const alignItems = [
+  {
+    name: 'align',
+    sub: [{ name: 'Align Right', image: align_right },
+    { name: 'Align Left', image: align_left },
+    { name: 'Align Top', image: align_top },
+    { name: 'Align Bottom', image: align_bottom },
+    { name: 'Distribute Horizontally', image: dist_horizontal },
+    { name: 'Distribute Vertically', image: dist_vertical }
+    ],
+    image: align
+  },
+  {
+    name: 'arrange',
+    sub: [{ name: 'Bring To Front', image: bring_front },
+    { name: 'Send To Back', image: send_back }],
+    image: arrange
+  }
+]
 const categories = {
   'Line': 'Line',
   'Arrow': 'Line',
@@ -90,6 +120,7 @@ export default class ReactPaint extends React.Component {
       bold: false,
       width: 0,
       height: 0,
+      align: '',
       selectedItem: defaultTool,
       currentItem: new Set([categories[defaultTool]]),
       defaultValues: defaultOption,
@@ -97,6 +128,7 @@ export default class ReactPaint extends React.Component {
       toolbarItems: toolbarItems
     };
     this.changeTool = this.changeTool.bind(this);
+    this.changeAlign = this.changeAlign.bind(this)
     // this.changeZoom = this.changeZoom.bind(this)
     this.handleFileBrowser = this.handleFileBrowser.bind(this);
     this.changeOption = this.changeOption.bind(this)
@@ -108,6 +140,10 @@ export default class ReactPaint extends React.Component {
     if (tool === "Image") {
       this.refs.fileUploader.click();
     }
+  }
+  changeAlign(name) {
+    this.setState({ align: name }, () => this.setState({ align: '' }))
+
   }
 
   selectItem(item, values) {
@@ -128,13 +164,13 @@ export default class ReactPaint extends React.Component {
   render() {
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
+        <div style={{ display: 'flex', flexDirection: 'row', height: '77px' }}>
           <Toolbox
             items={this.state.toolbarItems}
             activeItem={this.state.selectedItem}
             handleClick={this.changeTool}
           />
-          <div style={{ width: '1px', borderRight: '1px solid gray', margin: '10px 20px' }} />
+          <div style={{ width: '1px', borderRight: '1px solid gray', margin: '10px 10px' }} />
           <Options
             activeItem={this.state.currentItem}
             dashed={this.state.dashed}
@@ -153,17 +189,18 @@ export default class ReactPaint extends React.Component {
             defaultValues={this.state.currentValues}
             style={{ height: "50px" }}
           />
-          {/* <div style={{ width: '1px', borderRight: '1px solid gray', margin: '10px 20px' }} /> */}
-          {/* <ColorPanel
-            selectedStrokeColor={this.state.stroke}
-            selectedFillColor={this.state.fill}
-            handleClick={this.changeColor}
-          /> */}
+          <div style={{ width: '1px', borderRight: '1px solid gray', margin: '10px 10px' }} />
+          <Menu
+            items={alignItems}
+            // activeItem={this.state.selectedItem}
+            handleClick={this.changeAlign}
+          />
         </div>
         <input type="file" id="file" ref="fileUploader" accept="image/*" onChange={this.handleFileBrowser} style={{ display: "none" }} />
         <Content
           // items={this.state.toolbarItems}
           activeItem={this.state.selectedItem}
+          alignType={this.state.align}
           changeTool={this.changeTool}
           stroke={this.state.stroke}
           fill={this.state.fill}

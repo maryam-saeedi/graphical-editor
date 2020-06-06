@@ -138,6 +138,8 @@ export default class Content extends React.Component {
             this.selected = []
             this.setState({ boundingBox: {} })
         }
+        if (this.props.alignType != prevProps.alignType)
+            this.handleAlign()
         if (this.props.activeItem === "Move") {
             let prop = null, value = null
             if (dashed != prevProps.dashed) {
@@ -227,6 +229,7 @@ export default class Content extends React.Component {
         this.props.selectItem(type, this.selected.length > 0 ? this.state.refs[this.selected[this.selected.length - 1]].current.getStyle() : {})
     }
     select(id) {
+        console.log('select', this.selected, id)
         let type = new Set()
         const { boundingBox } = this.state
         boundingBox[id] = this.state.refs[id].current.setBoundry()
@@ -292,7 +295,7 @@ export default class Content extends React.Component {
         let element = null
         this.isMouseUp = false
         this.setState({ startX: e.clientX - this.offsetX, startY: e.clientY - this.offsetY })
-        if (activeItem === "Move" || activeItem === "Erase" || activeItem === "Copy" || activeItem === "Text")
+        if (activeItem === "Move" || activeItem === "Erase" || activeItem === "Copy")
             return
         if (activeItem === "Line" || activeItem === "Arrow" || activeItem === "Bridge")
             element = <Line
@@ -333,6 +336,21 @@ export default class Content extends React.Component {
                 updateLayout={this.handleLayoutUpdate}
                 deselect={this.handleDeselect}
             />
+        else if (this.props.activeItem === "Text") {
+            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)}
+                size={this.props.size}
+                stroke={this.props.stroke} fill={this.props.fill}
+                font={this.props.font} bold={this.props.bold}
+                ref={ref} id={this.state.count} key={this.state.count}
+                clickInside={this.handleClickInside}
+                handleBoundryClick={this.handleBoundryClick}
+                addLogic={this.handleAddLogic}
+                // changeShape={this.handleShapeChange}
+                deselect={this.handleDeselect}
+                updateLayout={this.handleLayoutUpdate} />
+            this.isTexting = true
+            // this.currentItem = this.state.count
+        }
         this.isDrawing = true
         this.currentItem = this.state.count
         if (element) {
@@ -347,42 +365,102 @@ export default class Content extends React.Component {
     handleMouseUp(e) {
         if (this.isDrawing || this.isMoving || this.isTexting) {
             this.snapshot()
-            this.isTexting = false
-            this.isDrawing = false
-            this.props.changeTool(null, 'Move')
-            this.select(this.currentItem)
             this.isMouseUp = true
         }
+        if (this.isDrawing || this.isTexting) {
+            this.props.changeTool(null, 'Move')
+            this.select(this.currentItem)
+        }
+        this.isTexting = false
+        this.isDrawing = false
         this.isMoving = false
         this.resizedItem = null
+    }
+    handleAlign() {
+        console.log(this.props.alignType)
+        const { alignType } = this.props
+        if (alignType === "Align Right")
+            this.align('right')
+        else if (alignType === "Align Left")
+            this.align('left')
+        else if (alignType === "Align Top")
+            this.align('top')
+        else if (alignType === "Align Bottom")
+            this.align('bottom')
+        else if (alignType === "Distribute Horizontally")
+            this.distribute('h')
+        else if (alignType === "Distribute Vertically")
+            this.distribute('v')
+        else if (alignType === "Bring To Front") {
+            if (this.selected > 1)
+                return
+            let { elements } = this.state
+            let target
+            elements = elements.filter(e => { if (e.id == this.selected[0]) target = e; else return true })
+            elements.push(target)
+            this.setState({ elements })
+        }
+        else if (alignType === "Send To Back") {
+            let { elements } = this.state
+            let target
+            elements = elements.filter(e => { if (e.id == this.selected[0]) target = e; else return true })
+            elements.splice(0, 0, target)
+            this.setState({ elements })
+        }
 
-        const { refs } = this.state
-        const ref = React.createRef()
-        const scale = this.props.zoom
-        let element = null
-        if (this.props.activeItem === "Text") {
-            element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)}
-                size={this.props.size}
-                stroke={this.props.stroke} fill={this.props.fill}
-                font={this.props.font} bold={this.props.bold}
-                ref={ref} id={this.state.count} key={this.state.count}
-                clickInside={this.handleClickInside}
-                handleBoundryClick={this.handleBoundryClick}
-                addLogic={this.handleAddLogic}
-                // changeShape={this.handleShapeChange}
-                deselect={this.handleDeselect}
-                updateLayout={this.handleLayoutUpdate} />
-            this.isTexting = true
-            this.currentItem = this.state.count
+    }
+    align(type) {
+        if (this.selected.length < 2)
+            return
+        let xs = [], ys = [], xs_ = [], ys_ = []
+        this.selected.forEach(s => { const loc = this.state.refs[s].current.getLocation(); xs.push(loc.x); xs_.push(loc.x + loc.w); ys.push(loc.y); ys_.push(loc.y + loc.h) })
+        let dir, pos
+        switch (type) {
+            case 'top':
+                dir = "Up"
+                pos = Math.min(...ys)
+                break
+            case 'bottom':
+                dir = "Down"
+                pos = Math.max(...ys_)
+                break
+            case 'right':
+                dir = "Right"
+                pos = Math.max(...xs_)
+                break
+            case 'left':
+                dir = "Left"
+                pos = Math.min(...xs)
+                break
         }
-        if (element) {
-            refs[this.state.count] = ref
-            this.setState({
-                elements: [...this.state.elements, { id: this.state.count, e: element }],
-                refs,
-                count: this.state.count + 1
-            })
-        }
+        this.selected.forEach(s => this.state.refs[s].current.handleAlign(dir, pos))
+        this.snapshot()
+    }
+    distribute(type) {
+        if (this.selected.length < 3)
+            return
+
+        console.log(this.selected)
+        let loc = {}
+        this.selected.forEach(s => loc[s] = this.state.refs[s].current.getLocation())
+        const xs = Object.values(loc).map(l => l.x)
+        const ys = Object.values(loc).map(l => l.y)
+        const xs_ = Object.values(loc).map(l => l.x + l.w)
+        const ys_ = Object.values(loc).map(l => l.y + l.h)
+        console.log(ys, ys_)
+        const sorted = Object.keys(loc).sort(function (a, b) { return type == 'v' ? (loc[a].y - loc[b].y) : (loc[a].x - loc[b].x) })
+        console.log('s', sorted)
+        const miny = type == 'v' ? Math.min(...ys) : Math.min(...xs)
+        const maxy = type == 'v' ? Math.max(...ys_) : Math.max(...xs_)
+        const totalh = Object.values(loc).map(l => type == 'v' ? l.h : l.w).reduce((total, num) => total + num)
+        const dis = (maxy - miny - totalh) / (this.selected.length - 1)
+        if (dis < 0)
+            return
+        console.log('dis', miny, maxy, totalh, this.selected.length, dis)
+        let offset = miny
+        sorted.forEach((s, i) => { this.state.refs[s].current.setSize(type == 'v' ? 'y' : 'x', offset + i * dis); offset += (type == 'v' ? loc[s].h : loc[s].w) })
+        this.snapshot()
+
     }
     handleKeyDown(e) {
         const scale = this.state.zoom
@@ -408,6 +486,7 @@ export default class Content extends React.Component {
                     const maxx = Math.max(...xs_)
                     const totalw = Object.values(loc).map(l => l.w).reduce((total, num) => total + num)
                     const dis = (maxx - minx - totalw) / (this.selected.length - 1)
+                    console.log('dis', dis)
                     let offset = minx
                     sorted.forEach((s, i) => { this.state.refs[s].current.setSize('x', offset + i * dis); offset += (loc[s].w) })
                     this.snapshot()
@@ -614,7 +693,8 @@ export default class Content extends React.Component {
                         {/* {this.isDrawing && <span style={{ margin: '0 20px' }}>{positionX - startX} &times; {positionY - startY} px</span>} */}
                         {(this.isMoving || this.isDrawing) && <span style={{ margin: '0 20px' }}>{objectW} &times; {objectH} px</span>}
                         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', margin: '0 50px 0 auto' }}>
-                            <div style={{ width: "20px", height: "20px", margin: '0 10px' }} dangerouslySetInnerHTML={{ __html: zoomin }} />
+                            {/* <div style={{ width: "20px", height: "20px", margin: '0 10px' }} dangerouslySetInnerHTML={{ __html: zoomin }} /> */}
+                            <img src={zoomin}/>
                             <CustomSlider
                                 value={zoom}
                                 min={0.5}
@@ -622,7 +702,8 @@ export default class Content extends React.Component {
                                 step={0.1}
                                 onChange={this.handleChangeZoom}
                                 style={{ width: '100px', padding: 0 }} />
-                            <div style={{ width: "20px", height: "20px", margin: '0 10px' }} dangerouslySetInnerHTML={{ __html: zoomout }} />
+                            {/* <div style={{ width: "20px", height: "20px", margin: '0 10px' }} dangerouslySetInnerHTML={{ __html: zoomout }} /> */}
+                            <img src={zoomout}/>
                         </div>
                         <ColorPicker color={bgColor} handleSetColor={this.handleBGChange} closeOnSelect width='20px' />
                     </div>
