@@ -588,17 +588,17 @@ export default class Content extends React.Component {
     handleUndo() {
         if (this.currentState < 1) return
         this.currentState--
-        const elements = this.history[this.currentState].map((s, i) => ({ id: s.id, e: React.createElement(s.type, { ...s.props, ...JSON.parse(s.state), key: s.id, ref: s.ref }) }))
-        const refs = this.history[this.currentState].map(s => s.ref)
-        this.setState({ elements: [], refs: [], boundingBox: [] },
+        let refs = {}
+        const elements = this.history[this.currentState].map((s, i) => {refs[s.id]=s.ref; return({ id: s.id, e: React.createElement(s.type, { ...s.props, ...JSON.parse(s.state), key: s.id, ref: s.ref }) })})
+        this.setState({ elements: [], refs: {}, boundingBox: {} },
             () => this.setState({ elements, refs }))
     }
     handleRedo() {
         if (this.currentState > this.history.length - 2) return
         this.currentState++
-        const elements = this.history[this.currentState].map((s, i) => ({ id: s.id, e: React.createElement(s.type, { ...s.props, ...JSON.parse(s.state), key: s.id, ref: s.ref }) }))
-        const refs = this.history[this.currentState].map(s => s.ref)
-        this.setState({ elements: [], refs: [], boundingBox: [] },
+        let refs = {}
+        const elements = this.history[this.currentState].map((s, i) => {refs[s.id] = s.ref; return({ id: s.id, e: React.createElement(s.type, { ...s.props, ...JSON.parse(s.state), key: s.id, ref: s.ref }) })})
+        this.setState({ elements: [], refs: {}, boundingBox: {} },
             () => this.setState({ elements, refs }))
     }
 
