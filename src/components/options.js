@@ -72,7 +72,7 @@ export default class Options extends React.Component {
         // console.log(activeItem, activeItem.size)
         return (
             <div style={{ display: 'flex', padding: '0 0 12px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     {(activeItem.size === 1 && activeItem.has("Shape") || activeItem.has("Line")) &&
                         [
                             <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end' }} >

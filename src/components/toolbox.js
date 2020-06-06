@@ -44,8 +44,8 @@ const bStyle = {
     margin: '2px',
     backgroundColor: 'rgb(91, 82, 145)',
 
-    "& svg": {
-      fill: 'white',
+    "& img": {
+      filter: 'invert(1)',
     }
   }
 

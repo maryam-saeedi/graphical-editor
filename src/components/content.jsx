@@ -138,7 +138,7 @@ export default class Content extends React.Component {
             this.selected = []
             this.setState({ boundingBox: {} })
         }
-        if (this.props.alignType != prevProps.alignType)
+        if (this.props.alignType != prevProps.alignType && this.props.alignType)
             this.handleAlign()
         if (this.props.activeItem === "Move") {
             let prop = null, value = null
@@ -229,7 +229,6 @@ export default class Content extends React.Component {
         this.props.selectItem(type, this.selected.length > 0 ? this.state.refs[this.selected[this.selected.length - 1]].current.getStyle() : {})
     }
     select(id) {
-        console.log('select', this.selected, id)
         let type = new Set()
         const { boundingBox } = this.state
         boundingBox[id] = this.state.refs[id].current.setBoundry()
@@ -377,7 +376,6 @@ export default class Content extends React.Component {
         this.resizedItem = null
     }
     handleAlign() {
-        console.log(this.props.alignType)
         const { alignType } = this.props
         if (alignType === "Align Right")
             this.align('right')
@@ -391,23 +389,25 @@ export default class Content extends React.Component {
             this.distribute('h')
         else if (alignType === "Distribute Vertically")
             this.distribute('v')
-        else if (alignType === "Bring To Front") {
-            if (this.selected > 1)
-                return
-            let { elements } = this.state
-            let target
-            elements = elements.filter(e => { if (e.id == this.selected[0]) target = e; else return true })
-            elements.push(target)
-            this.setState({ elements })
-        }
-        else if (alignType === "Send To Back") {
-            let { elements } = this.state
-            let target
-            elements = elements.filter(e => { if (e.id == this.selected[0]) target = e; else return true })
-            elements.splice(0, 0, target)
-            this.setState({ elements })
-        }
+        else if (alignType === "Bring To Front")
+            this.arrange('front')
+        else if (alignType === "Send To Back")
+            this.arrange('back')
 
+    }
+    arrange(type) {
+        if (this.selected.length != 1)
+            return
+        let { elements } = this.state
+        let target
+        elements = elements.filter(e => { if (e.id == this.selected[0]) target = e; else return true })
+        if (type == 'front')
+            elements.push(target)
+        else if (type == 'back')
+            elements.splice(0, 0, target)
+
+        this.setState({ elements })
+        this.snapshot()
     }
     align(type) {
         if (this.selected.length < 2)
@@ -440,23 +440,19 @@ export default class Content extends React.Component {
         if (this.selected.length < 3)
             return
 
-        console.log(this.selected)
         let loc = {}
         this.selected.forEach(s => loc[s] = this.state.refs[s].current.getLocation())
         const xs = Object.values(loc).map(l => l.x)
         const ys = Object.values(loc).map(l => l.y)
         const xs_ = Object.values(loc).map(l => l.x + l.w)
         const ys_ = Object.values(loc).map(l => l.y + l.h)
-        console.log(ys, ys_)
         const sorted = Object.keys(loc).sort(function (a, b) { return type == 'v' ? (loc[a].y - loc[b].y) : (loc[a].x - loc[b].x) })
-        console.log('s', sorted)
         const miny = type == 'v' ? Math.min(...ys) : Math.min(...xs)
         const maxy = type == 'v' ? Math.max(...ys_) : Math.max(...xs_)
         const totalh = Object.values(loc).map(l => type == 'v' ? l.h : l.w).reduce((total, num) => total + num)
         const dis = (maxy - miny - totalh) / (this.selected.length - 1)
         if (dis < 0)
             return
-        console.log('dis', miny, maxy, totalh, this.selected.length, dis)
         let offset = miny
         sorted.forEach((s, i) => { this.state.refs[s].current.setSize(type == 'v' ? 'y' : 'x', offset + i * dis); offset += (type == 'v' ? loc[s].h : loc[s].w) })
         this.snapshot()
@@ -464,81 +460,45 @@ export default class Content extends React.Component {
     }
     handleKeyDown(e) {
         const scale = this.state.zoom
-        if (this.selected.length > 2) {
-            if (e.shiftKey) {
-                let loc = {}
-                this.selected.forEach(s => loc[s] = this.state.refs[s].current.getLocation())
-                const xs = Object.values(loc).map(l => l.x)
-                const ys = Object.values(loc).map(l => l.y)
-                const xs_ = Object.values(loc).map(l => l.x + l.w)
-                const ys_ = Object.values(loc).map(l => l.y + l.h)
-                const sorted = Object.keys(loc).sort(function (a, b) { return loc[a].x - loc[b].x })
-                if (e.key == 'v' || e.key == 'V') {
-                    const miny = Math.min(...ys)
-                    const maxy = Math.max(...ys_)
-                    const totalh = Object.values(loc).map(l => l.h).reduce((total, num) => total + num)
-                    const dis = (maxy - miny - totalh) / (this.selected.length - 1)
-                    let offset = miny
-                    sorted.forEach((s, i) => { this.state.refs[s].current.setSize('y', offset + i * dis); offset += (loc[s].h) })
-                    this.snapshot()
-                } else if (e.key == 'h' || e.key == 'H') {
-                    const minx = Math.min(...xs)
-                    const maxx = Math.max(...xs_)
-                    const totalw = Object.values(loc).map(l => l.w).reduce((total, num) => total + num)
-                    const dis = (maxx - minx - totalw) / (this.selected.length - 1)
-                    console.log('dis', dis)
-                    let offset = minx
-                    sorted.forEach((s, i) => { this.state.refs[s].current.setSize('x', offset + i * dis); offset += (loc[s].w) })
-                    this.snapshot()
-                }
+        if (e.shiftKey) {
+            if (e.key == 'v' || e.key == 'V') {
+                this.distribute('v')
+            } else if (e.key == 'h' || e.key == 'H') {
+                this.distribute('h')
             }
         }
-        if (this.selected.length === 1) {
-            if (e.key === "PageUp") {
-                let { elements } = this.state
-                let target
-                elements = elements.filter(e => { if (e.id == this.selected[0]) target = e; else return true })
-                elements.push(target)
-                this.setState({ elements })
-            } else if (e.key === "PageDown") {
-                let { elements } = this.state
-                let target
-                elements = elements.filter(e => { if (e.id == this.selected[0]) target = e; else return true })
-                elements.splice(0, 0, target)
-                this.setState({ elements })
-            }
+        if (e.key === "PageUp") {
+            this.arrange('front')
+        } else if (e.key === "PageDown") {
+            this.arrange('back')
         }
         let dx = 0, dy = 0
         let xs = [], ys = [], xs_ = [], ys_ = []
         this.selected.forEach(s => { const loc = this.state.refs[s].current.getLocation(); xs.push(loc.x); xs_.push(loc.x + loc.w); ys.push(loc.y); ys_.push(loc.y + loc.h) })
-        let dir, pos
+        let type = null
         switch (e.key) {
             case "Up":
             case "ArrowUp":
                 dy = -1
-                dir = "Up"
-                pos = Math.min(...ys)
+                type = 'top'
                 break
             case "Down":
             case "ArrowDown":
                 dy = 1
-                dir = "Down"
-                pos = Math.max(...ys_)
+                type = 'bottom'
                 break
             case "Right":
             case "ArrowRight":
                 dx = 1
-                dir = "Right"
-                pos = Math.max(...xs_)
+                type = "right"
                 break
             case "Left":
             case "ArrowLeft":
                 dx = -1
-                dir = "Left"
-                pos = Math.min(...xs)
+                type = 'left'
                 break
         }
-        if (e.shiftKey) this.selected.forEach(s => this.state.refs[s].current.handleAlign(dir, pos))
+        if (e.shiftKey && type) this.align(type)
         else this.selected.forEach(s => this.state.refs[s].current.move(scale * dx, scale * dy))
         if (dx != 0 || dy != 0)
             this.snapshot()
@@ -694,7 +654,7 @@ export default class Content extends React.Component {
                         {(this.isMoving || this.isDrawing) && <span style={{ margin: '0 20px' }}>{objectW} &times; {objectH} px</span>}
                         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', margin: '0 50px 0 auto' }}>
                             {/* <div style={{ width: "20px", height: "20px", margin: '0 10px' }} dangerouslySetInnerHTML={{ __html: zoomin }} /> */}
-                            <img src={zoomin}/>
+                            <img src={zoomin} />
                             <CustomSlider
                                 value={zoom}
                                 min={0.5}
@@ -703,7 +663,7 @@ export default class Content extends React.Component {
                                 onChange={this.handleChangeZoom}
                                 style={{ width: '100px', padding: 0 }} />
                             {/* <div style={{ width: "20px", height: "20px", margin: '0 10px' }} dangerouslySetInnerHTML={{ __html: zoomout }} /> */}
-                            <img src={zoomout}/>
+                            <img src={zoomout} />
                         </div>
                         <ColorPicker color={bgColor} handleSetColor={this.handleBGChange} closeOnSelect width='20px' />
                     </div>
