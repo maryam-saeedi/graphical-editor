@@ -206,8 +206,7 @@ export default class Content extends React.Component {
             this.isMoving = true
         }
         if (this.isDrawing) {
-            const { x, y, w, h } = this.state.refs[this.currentItem].current.handleMoving(0, 0, scale * e.movementX, scale * e.movementY)
-            this.props.selectItem(null, { 'width': w, 'height': h })
+            this.state.refs[this.currentItem].current.handleMoving(0, 0, scale * e.movementX, scale * e.movementY).then(res => { this.props.selectItem(null, { 'width': res.w, 'height': res.h }) })
             this.setState({ objectW: e.clientX - this.offsetX - this.state.startX, objectH: e.clientY - this.state.startY - this.offsetY })
         }
     }
@@ -589,7 +588,7 @@ export default class Content extends React.Component {
         if (this.currentState < 1) return
         this.currentState--
         let refs = {}
-        const elements = this.history[this.currentState].map((s, i) => {refs[s.id]=s.ref; return({ id: s.id, e: React.createElement(s.type, { ...s.props, ...JSON.parse(s.state), key: s.id, ref: s.ref }) })})
+        const elements = this.history[this.currentState].map((s, i) => { refs[s.id] = s.ref; return ({ id: s.id, e: React.createElement(s.type, { ...s.props, ...JSON.parse(s.state), key: s.id, ref: s.ref }) }) })
         this.setState({ elements: [], refs: {}, boundingBox: {} },
             () => this.setState({ elements, refs }))
     }
@@ -597,7 +596,7 @@ export default class Content extends React.Component {
         if (this.currentState > this.history.length - 2) return
         this.currentState++
         let refs = {}
-        const elements = this.history[this.currentState].map((s, i) => {refs[s.id] = s.ref; return({ id: s.id, e: React.createElement(s.type, { ...s.props, ...JSON.parse(s.state), key: s.id, ref: s.ref }) })})
+        const elements = this.history[this.currentState].map((s, i) => { refs[s.id] = s.ref; return ({ id: s.id, e: React.createElement(s.type, { ...s.props, ...JSON.parse(s.state), key: s.id, ref: s.ref }) }) })
         this.setState({ elements: [], refs: {}, boundingBox: {} },
             () => this.setState({ elements, refs }))
     }

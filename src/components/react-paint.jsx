@@ -136,7 +136,7 @@ export default class ReactPaint extends React.Component {
   }
 
   changeTool(event, tool) {
-    this.setState({ selectedItem: tool, currentItem: new Set([categories[tool]]) });
+    this.setState({ selectedItem: tool, currentItem: new Set([categories[tool]]), currentValues: { ...this.state.defaultValues } });
     if (tool === "Image") {
       this.refs.fileUploader.click();
     }
@@ -151,7 +151,8 @@ export default class ReactPaint extends React.Component {
     this.setState({ currentValues: { ...this.state.defaultValues, ...values } })
   }
   changeOption(target, value) {
-    this.setState({ [target]: value, defaultValues: { ...this.state.defaultValues, [target]: value }, currentValues: { ...this.state.defaultValues, [target]: value } })
+    this.setState({ [target]: this.state.currentValues[target] }, 
+      () => this.setState({ [target]: value, defaultValues: { ...this.state.defaultValues, [target]: value }, currentValues: { ...this.state.defaultValues, [target]: value } }))
   }
 
   handleFileBrowser(event) {
@@ -202,18 +203,18 @@ export default class ReactPaint extends React.Component {
           activeItem={this.state.selectedItem}
           alignType={this.state.align}
           changeTool={this.changeTool}
-          stroke={this.state.currentValues.stroke}
-          fill={this.state.currentValues.fill}
-          dashed={this.state.currentValues.dashed}
-          weight={this.state.currentValues.weight}
-          shadow={this.state.currentValues.shadow}
-          strong={this.state.currentValues.strong}
-          font={this.state.currentValues.font}
-          size={this.state.currentValues.size}
-          bold={this.state.currentValues.bold}
-          cornerType={this.state.currentValues.corner}
-          width={this.state.currentValues.width}
-          height={this.state.currentValues.height}
+          stroke={this.state.stroke}
+          fill={this.state.fill}
+          dashed={this.state.dashed}
+          weight={this.state.weight}
+          shadow={this.state.shadow}
+          strong={this.state.strong}
+          font={this.state.font}
+          size={this.state.size}
+          bold={this.state.bold}
+          cornerType={this.state.corner}
+          width={this.state.width}
+          height={this.state.height}
           file={this.state.file}
           zoom={this.state.zoom}
           selectItem={this.selectItem}

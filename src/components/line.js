@@ -121,8 +121,10 @@ class Line extends React.Component {
         let { points, path } = this.state
         points.splice(1, 1, [points[1][0] + dx, points[1][1] + dy])
         path.splice(1, 1, ["L"].concat(points[1]))
-        this.setState({ points, path })
-        return this.getLocation()
+        return new Promise((resolve, reject) => {
+            this.setState({ points, path },
+                () => resolve(this.getLocation()))
+        })
     }
     move(dx, dy) {
         let { points, path } = this.state

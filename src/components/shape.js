@@ -102,8 +102,10 @@ class Shape extends React.Component {
     }
     handleMoving(dx, dy, dw = 0, dh = 0) {
         const { x, y, w, h } = this.state
-        this.setState({ x: this.state.x + dx, y: this.state.y + dy, w: this.state.w + dw, h: this.state.h + dh })
-        return { x: x + dx, y: y + dy, w: w + dw, h: h + dh }
+        return new Promise((resolve, reject) => {
+            this.setState({ x: this.state.x + dx, y: this.state.y + dy, w: this.state.w + dw, h: this.state.h + dh },
+                () => { resolve({ x: x + dx, y: y + dy, w: w + dw, h: h + dh }) })
+        })
     }
 
     handleKeyDown(e) {
@@ -112,12 +114,12 @@ class Shape extends React.Component {
     move(movementX, movementY) {
         let dx = 0, dy = 0, dw = 0, dh = 0
         if (this.corner === 5) {  //rotate
-            if(movementY==0)    return
+            if (movementY == 0) return
             const { rotate } = this.state
-            const r = Math.max(this.state.w/2, this.state.h/2)
-            const ang = Math.atan2(Math.sqrt(Math.pow(movementX, 2) + Math.pow(movementY, 2)) , r)
-            this.setState({ rotate: rotate + (-1* Math.sign(Math.sign((rotate%360)/180-1)-0.01) * Math.sign(movementY) * (ang * 180 / Math.PI)) })
-            this.props.updateLayout(this.props.id, this.setBoundry(), this.state.w + dw, this.state.h + dh)
+            const r = Math.max(this.state.w / 2, this.state.h / 2)
+            const ang = Math.atan2(Math.sqrt(Math.pow(movementX, 2) + Math.pow(movementY, 2)), r)
+            this.setState({ rotate: rotate + (-1 * Math.sign(Math.sign((rotate % 360) / 180 - 1) - 0.01) * Math.sign(movementY) * (ang * 180 / Math.PI)) },
+                () => this.props.updateLayout(this.props.id, this.setBoundry(), this.state.w + dw, this.state.h + dh))
             this.isMoving = true
             return
         }
@@ -141,8 +143,7 @@ class Shape extends React.Component {
             dx = movementX
             dy = movementY
         }
-        this.handleMoving(dx, dy, dw, dh)
-        this.props.updateLayout(this.props.id, this.setBoundry(), this.state.w + dw, this.state.h + dh)
+        this.handleMoving(dx, dy, dw, dh).then(rs => this.props.updateLayout(this.props.id, this.setBoundry(), this.state.w + dw, this.state.h + dh))
         this.isMoving = true
     }
     handleBoundingMouseDown(corner) {
