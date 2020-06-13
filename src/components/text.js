@@ -83,7 +83,7 @@ class Text extends React.Component {
         this.props.addLogic(this.props.id, this.logic)
     }
     handleClick(e) {
-        this.props.clickInside(this.props.id)
+        this.props.clickInside(this.props.id, e.ctrlKey)
         e.stopPropagation()
         this.setState({ edit: true })
     }

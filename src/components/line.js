@@ -77,7 +77,7 @@ class Line extends React.Component {
         e.preventDefault()
         e.stopPropagation()
         this.setBoundry()
-        this.props.clickInside(this.props.id)
+        this.props.clickInside(this.props.id, e.ctrlKey)
     }
     handleAddAnchor(idx) {
         const self = this
