@@ -256,7 +256,8 @@ export default class Content extends React.Component {
             const { elements, refs, count } = this.state
             const { changeTool } = this.props
             const ref = React.createRef()
-            const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { ...refs[id].current.state, x: refs[id].current.state.x + 10, y: refs[id].current.state.y + 10, id: count, ref: ref, key: count })
+            const newProps = JSON.parse(JSON.stringify(refs[id].current.state))
+            const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { ...newProps, x: refs[id].current.state.x + 10, y: refs[id].current.state.y + 10, id: count, ref: ref, key: count })
             refs[count] = ref
             if (ctrl) {
                 this.multiCopy.push(count)
