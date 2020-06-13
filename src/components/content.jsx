@@ -124,6 +124,7 @@ export default class Content extends React.Component {
         this.isMoving = false
         this.isDrawing = false
         this.isTexting = false
+        this.ignore = false
     }
 
     componentDidMount() {
@@ -133,7 +134,7 @@ export default class Content extends React.Component {
         this.offsetH = this.canvas.current.getBoundingClientRect().height
     }
     componentDidUpdate(prevProps, prevState) {
-        const { dashed, weight, cornerType, stroke, fill, shadow, strong, font, size, bold, width, height } = this.props
+        const { dashed, weight, cornerType, stroke, fill, shadow, strong, font, size, bold, rtl, width, height } = this.props
         if (this.props.activeItem != prevProps.activeItem && this.props.activeItem !== "Move") {
             this.selected = []
             this.setState({ boundingBox: {} })
@@ -172,6 +173,9 @@ export default class Content extends React.Component {
             } else if (bold != prevProps.bold) {
                 prop = 'bold'
                 value = bold
+            }else if (rtl != prevProps.rtl) {
+                prop = 'rtl'
+                value = rtl
             }
             if (prop) {
                 this.selected.forEach(s => {
@@ -339,6 +343,7 @@ export default class Content extends React.Component {
                 size={this.props.size}
                 stroke={this.props.stroke} fill={this.props.fill}
                 font={this.props.font} bold={this.props.bold}
+                rtl={this.props.rtl}
                 ref={ref} id={this.state.count} key={this.state.count}
                 clickInside={this.handleClickInside}
                 handleBoundryClick={this.handleBoundryClick}
@@ -458,6 +463,8 @@ export default class Content extends React.Component {
 
     }
     handleKeyDown(e) {
+        if(this.ignore)
+            return
         const scale = this.state.zoom
         if (e.shiftKey) {
             if (e.key == 'v' || e.key == 'V') {
@@ -501,6 +508,8 @@ export default class Content extends React.Component {
         else this.selected.forEach(s => this.state.refs[s].current.move(scale * dx, scale * dy))
         if (dx != 0 || dy != 0)
             this.snapshot()
+        this.ignore = true
+        setTimeout(()=>{this.ignore=false}, 10)
     }
     handlekeyUp(e) {
         if (this.multiCopy.length > 0) {
@@ -556,10 +565,14 @@ export default class Content extends React.Component {
             props['id'] = count
             props['key'] = count
             props['ref'] = ref
+            props['clickInside'] = this.handleClickInside
+            props['deselect'] = this.handleDeselect
+            porps['handleBoundryClick']=this.handleBoundryClick
+            props['updateLayout']=this.handleLayoutUpdate
             if (node.attribs.element === "Shape") {
-                props['clickInside'] = this.handleClickInside
                 element = React.createElement(Shape, props)
             } else if (node.attribs.element === "Line") {
+                props['changeShape'] = this.handleShapeChange
                 element = React.createElement(Line, props)
             } else if (node.attribs.element === "Text") {
                 element = React.createElement(Text, props)
@@ -613,7 +626,7 @@ export default class Content extends React.Component {
 
     render() {
         const { elements, boundingBox, open, positionX, positionY, startX, startY, objectW, objectH, zoom, bgColor } = this.state
-        // console.log(elements[0])
+        // console.log('render')
 
         return (
             <div

@@ -99,6 +99,7 @@ const defaultOption = {
   font: "Times New Roman",
   size: 12,
   bold: false,
+  rtl: false,
   width: 0,
   height: 0,
 }
@@ -118,6 +119,7 @@ export default class ReactPaint extends React.Component {
       font: "Times New Roman",
       size: 12,
       bold: false,
+      rtl: false,
       width: 0,
       height: 0,
       align: '',
@@ -182,6 +184,7 @@ export default class ReactPaint extends React.Component {
             zoom={this.state.zoom}
             font={this.state.font}
             bold={this.state.bold}
+            rtl={this.state.rtl}
             size={this.state.size}
             // handleChangeZoom={this.changeZoom}
             handleChangeOption={this.changeOption}
@@ -212,6 +215,7 @@ export default class ReactPaint extends React.Component {
           font={this.state.font}
           size={this.state.size}
           bold={this.state.bold}
+          rtl={this.state.rtl}
           cornerType={this.state.corner}
           width={this.state.width}
           height={this.state.height}

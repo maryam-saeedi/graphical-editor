@@ -1,5 +1,4 @@
 import React from "react";
-import MenuItem from '@material-ui/core/MenuItem';
 import Select from '@material-ui/core/Select';
 import Typography from '@material-ui/core/Typography';
 import Slider from '@material-ui/core/Slider';
@@ -8,6 +7,11 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormLabel from '@material-ui/core/FormLabel';
 import IconButton from '@material-ui/core/IconButton';
+import ButtonGroup from '@material-ui/core/ButtonGroup';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
 
 import lineTypeIcon from "../images/line_style.svg"
 import lineWeight from "../images/line.svg";
@@ -17,6 +21,8 @@ import fontSizeIcon from "../images/font-size.svg"
 import boldIcon from "../images/bold.svg"
 import heightIcon from "../images/height.svg"
 import widthIcon from "../images/width.svg"
+import rtlIcon from "../images/rtl.svg"
+import ltrIcon from "../images/ltr.svg"
 import ColorPicker from "./color-panel"
 
 export default class Options extends React.Component {
@@ -53,11 +59,11 @@ export default class Options extends React.Component {
             handleChangeOption(item, event.target.checked)
         }
     }
-    handleToggleButton(item) {
+    handleToggleButton(item, value) {
         const { handleChangeOption } = this.props
         const self = this
         return function (event) {
-            handleChangeOption(item, !self.props[item])
+            handleChangeOption(item, value ? value : !self.props[item])
         }
     }
     handleChangeInput(item) {
@@ -68,7 +74,7 @@ export default class Options extends React.Component {
     }
     render() {
         const { activeItem } = this.props
-        const { corner, dashed, weight, strong, shadow, stroke, fill, zoom, font, size, bold, width, height } = this.props.defaultValues
+        const { corner, dashed, weight, strong, shadow, stroke, fill, zoom, font, size, bold, rtl, width, height } = this.props.defaultValues
         // console.log(activeItem, activeItem.size)
         return (
             <div style={{ display: 'flex', padding: '0 0 12px' }}>
@@ -142,7 +148,7 @@ export default class Options extends React.Component {
                                         />
                                     </div>
                                 </div>
-                                {activeItem.has("Shape") && <div style={{display: 'flex', flexDirection: 'column'}}>
+                                {activeItem.has("Shape") && <div style={{ display: 'flex', flexDirection: 'column' }}>
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
                                         {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: widthIcon }} /> */}
                                         <img src={widthIcon} />
@@ -150,7 +156,7 @@ export default class Options extends React.Component {
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
                                         {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: heightIcon }} /> */}
-                                        <img src={heightIcon}/>
+                                        <img src={heightIcon} />
                                         <Input type="number" value={height} onChange={this.handleChangeInput('height')} style={{ width: "70px" }} />
                                     </div>
                                 </div>}
@@ -163,7 +169,7 @@ export default class Options extends React.Component {
                     {activeItem.size === 1 && activeItem.has("Text") &&
                         <div style={{ display: "flex", flexDirection: 'row', alignItems: 'flex-end' }}>
                             {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: fontIcon }} /> */}
-                            <img src={fontIcon}/>
+                            <img src={fontIcon} />
                             <Select
                                 value={font}
                                 onChange={this.handleChangeSelect('font')}
@@ -171,9 +177,14 @@ export default class Options extends React.Component {
                             >
                                 <MenuItem value={"Times New Roman"}>Times New Roman</MenuItem>
                                 <MenuItem value={"Comic Sans MS"}>Comic Sans MS</MenuItem>
+                                <MenuItem value={"Avenir LT Std 55 Roman"}>Avenir LT Std 55 Roman</MenuItem>
+                                <MenuItem value={"Vazir"}>Vazir</MenuItem>
+                                <MenuItem value={"B Nazanin"}>B Nazanin</MenuItem>
+                                <MenuItem value={"B Yekan"}>B Yekan</MenuItem>
+                                <MenuItem value={"Shabnam"}>Shabnam</MenuItem>
                             </Select>
                             {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: fontSizeIcon }} /> */}
-                            <img src={fontSizeIcon}/>
+                            <img src={fontSizeIcon} />
                             <Select
                                 labelId="demo-simple-select-helper-label"
                                 id="demo-simple-select-helper"
@@ -197,13 +208,23 @@ export default class Options extends React.Component {
                             <IconButton style={{ padding: '5px', borderRadius: '5px', background: bold ? 'lightblue' : 'none' }}
                                 onClick={this.handleToggleButton('bold')}>
                                 {/* <div style={{ width: "20px", height: "20px" }} dangerouslySetInnerHTML={{ __html: boldIcon }} /> */}
-                                <img src={boldIcon}/>
+                                <img src={boldIcon} />
                             </IconButton>
                             {/* <Checkbox
                                 checked={bold}
                                 onChange={this.handleCheckbox('bold')}
                                 color="primary"
                             /> */}
+                            <ButtonGroup style={{margin: '0 10px'}}>
+                                <IconButton style={{ padding: '5px', borderRadius: '5px', background: rtl ? 'none' : 'lightblue' }}
+                                    onClick={this.handleToggleButton('rtl', false)}>
+                                    <img src={ltrIcon} />
+                                </IconButton>
+                                <IconButton style={{ padding: '5px', borderRadius: '5px', background: rtl ? 'lightblue' : 'none' }}
+                                    onClick={this.handleToggleButton('rtl', true)}>
+                                    <img src={rtlIcon} />
+                                </IconButton>
+                            </ButtonGroup>
                             <div style={{ display: "flex", alignItems: "center" }}>
                                 <ColorPicker color={stroke} title="Text" handleSetColor={this.handleChangeColor('stroke')} />
                                 <ColorPicker color={fill} title="Background" handleSetColor={this.handleChangeColor('fill')} />

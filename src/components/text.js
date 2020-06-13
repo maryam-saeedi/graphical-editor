@@ -13,8 +13,8 @@ class Text extends React.Component {
             fill: this.props.fill,
             size: this.props.size,
             bold: this.props.bold,
-            font: this.props.font
-
+            font: this.props.font,
+            rtl: this.props.rtl
         }
 
         this.handleText = this.handleText.bind(this)
@@ -42,12 +42,12 @@ class Text extends React.Component {
     }
     updateStyle(prop, value) {
         return new Promise((resolve, reject) => {
-            this.setState({ [prop]: value }, resolve(1))
+            this.setState({ [prop]: value }, () => { this.props.updateLayout(this.props.id, this.setBoundry()); resolve(1) })
         })
     }
     getStyle() {
-        const { stroke, fill, bold, font, size } = this.state
-        return { stroke, fill, bold, font, size }
+        const { stroke, fill, bold, font, size, rtl } = this.state
+        return { stroke, fill, bold, font, size, rtl }
     }
     getCorner() {
         return null
@@ -55,6 +55,14 @@ class Text extends React.Component {
     setCorner(corner) { }
     getLocation() {
         return { x: this.state.x, y: this.state.y, w: this.box.width, h: this.box.height }
+    }
+    setSize(prop, value) {
+        const { updateLayout, id } = this.props
+        const self = this
+        return new Promise((resolve, reject) => {
+            this.setState({ [prop]: value }, () => { updateLayout(id, self.setBoundry()); resolve(1) })
+
+        })
     }
 
     handleText(e) {
@@ -116,7 +124,7 @@ class Text extends React.Component {
         this.setState({ edit: true })
         return (
             <g>
-                <rect x={this.state.x - 5} y={this.state.y - 5} width={this.box.width + 10} height={(this.box.height ? this.box.height : 10) + 10}
+                <rect x={this.state.rtl ? this.state.x - this.box.width - 5 : this.state.x - 5} y={this.state.y - 5} width={this.box.width + 10} height={(this.box.height ? this.box.height : 10) + 10}
                     stroke='gray' stroke-dasharray="5 5" fill='transparent'
                     onMouseDown={this.handleMouseDown}
                     onClick={this.clickInBoundry} />
@@ -125,7 +133,7 @@ class Text extends React.Component {
     }
     render() {
         const { x, y, edit, text } = this.state
-        const { size, font, bold, stroke, fill } = this.state
+        const { size, font, bold, stroke, fill, rtl } = this.state
         return (
             <g onClick={this.handleClick} onDoubleClick={this.handleDoubleClick} element='Text' props={JSON.stringify(this.state)}>
                 {/* <defs>
@@ -136,7 +144,7 @@ class Text extends React.Component {
                     </filter>
                 </defs> */}
                 {this.box && <rect x={this.state.x} y={this.state.y} width={this.box.width} height={this.box.height} fill={fill} stroke="none" />}
-                <text x={x} y={y + 15} fontFamily={font} fontSize={size} fontWeight={bold ? 'bold' : 'normal'} fill={stroke} ref={this.child}>{text}</text>
+                <text x={x} y={y + 15} direction={rtl ? 'rtl' : 'ltr'} fontFamily={font} fontSize={size} fontWeight={bold ? 'bold' : 'normal'} fill={stroke} ref={this.child}>{text}</text>
                 {edit && <foreignObject x={x - 5} y={y - 5} width="100" height="30">
 
                     <input
@@ -153,7 +161,7 @@ class Text extends React.Component {
 Text.defaultProps = {
     edit: true,
     text: ' ',
-    changeShape: () => {}
+    changeShape: () => { }
 }
 
 export default Text

@@ -58,10 +58,16 @@ class Line extends React.Component {
     getLocation() {
         return { x: this.box.x, y: this.box.y, w: this.box.width, h: this.box.height }
     }
-    setSize() {
-        return new Promise((resolve, reject) => {
-            reject(0)
-        })
+    setSize(prop, value) {
+        // return new Promise((resolve, reject) => {
+        //     reject(0)
+        // })
+        this.anchor = -1
+        if (prop == 'x') {
+            this.move(value - this.box.x, 0)
+        } else if (prop == 'y') {
+            this.move(0, value - this.box.y)
+        }
     }
     handleClick(e) {
         if (e.detail == 2)
