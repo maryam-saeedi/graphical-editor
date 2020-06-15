@@ -37,7 +37,6 @@ class Text extends React.Component {
         if (!this.box || this.box.width != this.child.current.getBoundingClientRect().width || this.box.height != this.child.current.getBoundingClientRect().height) {
             this.box = this.child.current.getBoundingClientRect()
             this.forceUpdate()
-            return true
         }
     }
     updateStyle(prop, value) {
@@ -53,15 +52,15 @@ class Text extends React.Component {
         return null
     }
     setCorner(corner) { }
-    getLocation() {
-        return { x: this.state.x, y: this.state.y, w: this.box.width, h: this.box.height }
+    getSize() {
+        const { x, y } = this.state
+        return { x: x, y: y, w: this.box.width, h: this.box.height }
     }
     setSize(prop, value) {
         const { updateLayout, id } = this.props
         const self = this
         return new Promise((resolve, reject) => {
             this.setState({ [prop]: value }, () => { updateLayout(id, self.setBoundry()); resolve(1) })
-
         })
     }
 
@@ -69,7 +68,8 @@ class Text extends React.Component {
         this.setState({ text: e.target.value })
     }
     handleBlur() {
-        this.setState({ edit: false }, () => this.props.changeShape())
+        const { changeShape } = this.props
+        this.setState({ edit: false }, () => changeShape())
     }
     handleFocus() {
         this.setState({ edit: true })
@@ -77,31 +77,36 @@ class Text extends React.Component {
 
     handleLogic(logic) {
         this.logic = logic
-        console.log(this.logic)
     }
     handleDoubleClick(e) {
         this.props.addLogic(this.props.id, this.logic)
     }
     handleClick(e) {
-        this.props.clickInside(this.props.id, e.ctrlKey)
+        const { id, clickInside } = this.props
+        clickInside(id, e.ctrlKey)
         e.stopPropagation()
         this.setState({ edit: true })
     }
     handleMoving(dx, dy, dw = 0, dh = 0) {
-        this.setState({ x: this.state.x + dx, y: this.state.y + dy })
+        const { x, y } = this.state
+        this.setState({ x: x + dx, y: y + dy })
     }
     move(dx, dy) {
-        this.setState({ x: this.state.x + dx, y: this.state.y + dy })
-        this.props.updateLayout(this.props.id, this.setBoundry())
+        const { x, y } = this.state
+        const { id, updateLayout } = this.props
+        this.setState({ x: x + dx, y: y + dy })
+        updateLayout(id, this.setBoundry())
         this.isMoving = true
     }
     handleMouseDown() {
-        this.props.handleBoundryClick(this.props.id)
+        const { id, handleBoundryClick } = this.props
+        handleBoundryClick(id)
         this.isMoving = false
     }
     clickInBoundry(e) {
+        const { id, deselect } = this.props
         e.stopPropagation()
-        !this.isMoving && this.props.deselect(this.props.id)
+        !this.isMoving && deselect(id)
     }
     handleAlign(direction, position) {
         switch (direction) {
@@ -160,8 +165,23 @@ class Text extends React.Component {
 
 Text.defaultProps = {
     edit: true,
-    text: ' ',
-    changeShape: () => { }
+    text: '',
+    changeShape: () => { },
+    size: 20,
+    bold: false,
+    font: 'Times New Roman',
+    rtl: true,
+}
+
+Text.PropTypes = {
+    x: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired,
+    stroke: PropTypes.string,
+    fill: PropTypes.string,
+    size: PropTypes.number,
+    bold: PropTypes.bool,
+    font: PropTypes.string,
+    rtl: PropTypes.bool
 }
 
 export default Text

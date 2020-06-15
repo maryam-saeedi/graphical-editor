@@ -24,7 +24,6 @@ class Shape extends React.Component {
         this.clickInBoundry = this.clickInBoundry.bind(this)
         this.handleResize = this.handleResize.bind(this)
         this.handleMoving = this.handleMoving.bind(this)
-        this.handleKeyDown = this.handleKeyDown.bind(this)
         this.setSize = this.setSize.bind(this)
         this.move = this.move.bind(this)
         this.corner = 0
@@ -37,17 +36,16 @@ class Shape extends React.Component {
             return
         var reader = new FileReader();
         const self = this
+        const { file } = this.props
         reader.onloadend = function () {
             const src = reader.result
             self.setState({ src })
         }
-        reader.readAsDataURL(this.props.file);
+        reader.readAsDataURL(file);
     }
     handleClick(e) {
-        const { x, y, w, h, layout } = this.state
         e.preventDefault()
         e.stopPropagation()
-        this.setState({ layout: true, erase: this.props.earase })
         this.props.clickInside(this.props.id, e.ctrlKey)
         this.corner = 0
     }
@@ -55,22 +53,21 @@ class Shape extends React.Component {
     updateStyle(prop, value) {
         return new Promise((resolve, reject) => {
             this.setState({ [prop]: value }, () => { resolve(1) })
-
         })
     }
     getStyle() {
-        const { stroke, fill, width, dashed, corner, shadow, strong, w, h } = this.state
-        return { stroke, fill, width, dashed, corner, shadow, strong, width: w, height: h }
+        const { stroke, fill, dashed, corner, shadow, strong, w, h } = this.state
+        return { stroke, fill, dashed, corner, shadow, strong, width: w, height: h }
     }
-    getLocation() {
+    getSize() {
         return { x: this.state.x, y: this.state.y, w: this.state.w, h: this.state.h }
     }
     setSize(prop, value) {
         const { updateLayout, id } = this.props
-        console.log(prop, value)
         const self = this
         return new Promise((resolve, reject) => {
-            this.setState({ [prop]: value }, () => { updateLayout(id, self.setBoundry(), this.state.w, this.state.h); resolve(1) })
+            const { w, h } = self.state
+            this.setState({ [prop]: value }, () => { updateLayout(id, self.setBoundry(), w, h); resolve(1) })
 
         })
     }
@@ -103,16 +100,16 @@ class Shape extends React.Component {
     handleMoving(dx, dy, dw = 0, dh = 0) {
         const { x, y, w, h } = this.state
         return new Promise((resolve, reject) => {
-            this.setState({ x: this.state.x + dx, y: this.state.y + dy, w: this.state.w + dw, h: this.state.h + dh },
+            this.setState({ x: x + dx, y: y + dy, w: w + dw, h: h + dh },
                 () => { resolve({ x: x + dx, y: y + dy, w: w + dw, h: h + dh }) })
         })
     }
 
-    handleKeyDown(e) {
-        console.log(this.props.id, e.keyCode)
-    }
     move(movementX, movementY) {
         let dx = 0, dy = 0, dw = 0, dh = 0
+        const { id, updateLayout } = this.props
+        const { w, h } = this.state
+        this.isMoving = true
         if (this.corner === 5) {  //rotate
             if (movementY == 0) return
             const { rotate } = this.state
@@ -120,7 +117,6 @@ class Shape extends React.Component {
             const ang = Math.atan2(Math.sqrt(Math.pow(movementX, 2) + Math.pow(movementY, 2)), r)
             this.setState({ rotate: rotate + (-1 * Math.sign(Math.sign((rotate % 360) / 180 - 1) - 0.01) * Math.sign(movementY) * (ang * 180 / Math.PI)) },
                 () => this.props.updateLayout(this.props.id, this.setBoundry(), this.state.w + dw, this.state.h + dh))
-            this.isMoving = true
             return
         }
         if (this.corner === 1) {
@@ -143,8 +139,7 @@ class Shape extends React.Component {
             dx = movementX
             dy = movementY
         }
-        this.handleMoving(dx, dy, dw, dh).then(rs => this.props.updateLayout(this.props.id, this.setBoundry(), this.state.w + dw, this.state.h + dh))
-        this.isMoving = true
+        this.handleMoving(dx, dy, dw, dh).then(rs => updateLayout(id, this.setBoundry(), w + dw, h + dh))
     }
     handleBoundingMouseDown(corner) {
         const { id, handleBoundryClick } = this.props
@@ -158,8 +153,9 @@ class Shape extends React.Component {
         }
     }
     clickInBoundry(e) {
+        const { id, deselect } = this.props
         e.stopPropagation()
-        !this.isMoving && this.props.deselect(this.props.id)
+        !this.isMoving && deselect(id)
     }
     setBoundry() {
         const { x, y, w, h, rotate } = this.state
@@ -184,7 +180,6 @@ class Shape extends React.Component {
                     : (shape === "Circle" ? <circle cx={x + w / 2} cy={y + w / 2} r={w / 2} stroke={stroke} stroke-width={weight} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} fill={fill} filter={shadow ? "url(#shadow2)" : ""} />
                         : (shape === "Triangle" ? <polygon points={`${x + w / 2},${y} ${x},${y + h} ${x + w},${y + h}`} stroke={stroke} stroke-width={weight} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} fill={fill} filter={shadow ? "url(#shadow2)" : ""} transform-origin={`${x + w / 2}px ${y + h / 2}px`} />
                             : <ellipse cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} stroke={stroke} stroke-width={weight} stroke-dasharray={`${dashed + 0.1 * dashed * weight}, ${dashed + 0.1 * dashed * weight}`} fill={fill} filter={shadow ? "url(#shadow2)" : ""} />)))
-        { if (this.state.erase) return null }
         return (
             <g onClick={this.handleClick} onKeyDown={this.handleKeyDown} element='Shape' props={JSON.stringify(this.state)} transform-origin={`${x + w / 2}px ${y + h / 2}px`} style={{ transform: `rotate(${rotate}deg)` }}>
                 <defs>
@@ -211,8 +206,31 @@ class Shape extends React.Component {
 }
 
 Shape.defaultProps = {
-    rotatable: false,
-    rotate: 0
+    rotate: 0,
+    src: '',
+    weight: 0,
+    stroke: 'black',
+    fill: 'transparent',
+    dashed: 0,
+    corner: 'round',
+    shadow: false,
+    strong: 0
+}
+Shape.PropTypes = {
+    x: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired,
+    w: PropTypes.number.isRequired,
+    h: PropTypes.number.isRequired,
+    rotate: PropTypes.number,
+    src: PropTypes.string,
+    shape: PropTypes.string.isRequired,
+    weight: PropTypes.number,
+    stroke: PropTypes.string,
+    fill: PropTypes.string,
+    dashed: PropTypes.string,
+    corner: PropTypes.string,
+    shadow: PropTypes.bool,
+    strong: PropTypes.number
 }
 
 export default Shape
