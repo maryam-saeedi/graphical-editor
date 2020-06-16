@@ -56,8 +56,8 @@ class Shape extends React.Component {
         })
     }
     getStyle() {
-        const { stroke, fill, dashed, corner, shadow, strong, w, h } = this.state
-        return { stroke, fill, dashed, corner, shadow, strong, width: w, height: h }
+        const { stroke, fill, weight, dashed, corner, shadow, strong, w, h } = this.state
+        return { stroke, fill, weight, dashed, corner, shadow, strong, width: w, height: h }
     }
     getSize() {
         return { x: this.state.x, y: this.state.y, w: this.state.w, h: this.state.h }
@@ -66,8 +66,7 @@ class Shape extends React.Component {
         const { updateLayout, id } = this.props
         const self = this
         return new Promise((resolve, reject) => {
-            const { w, h } = self.state
-            this.setState({ [prop]: value }, () => { updateLayout(id, self.setBoundry(), w, h); resolve(1) })
+            this.setState({ [prop]: value }, () => { const { w, h } = self.state; updateLayout(id, self.setBoundry(), w, h); resolve(1) })
 
         })
     }
