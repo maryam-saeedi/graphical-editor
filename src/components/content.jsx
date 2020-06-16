@@ -69,7 +69,6 @@ export default class Content extends React.Component {
             elements: [],
             boundingBox: {},
             input: false,
-            click: false,
             count: 0,
             refs: {},
             open: false,
@@ -113,7 +112,7 @@ export default class Content extends React.Component {
         ]
 
         this.item = {}
-        this.history = []
+        this.history = [[]]
         this.currentState = 0
         this.offsetW = "100%"
         this.offsetH = "100%"
@@ -134,14 +133,15 @@ export default class Content extends React.Component {
         this.offsetH = this.canvas.current.getBoundingClientRect().height
     }
     componentDidUpdate(prevProps, prevState) {
-        const { dashed, weight, cornerType, stroke, fill, shadow, strong, font, size, bold, rtl, width, height } = this.props
-        if (this.props.activeItem != prevProps.activeItem && this.props.activeItem !== "Move") {
+        const { dashed, weight, cornerType, stroke, fill, shadow, strong, font, size, bold, rtl, width, height, alignType, activeItem } = this.props
+        const { refs } = this.state
+        if (activeItem != prevProps.activeItem && activeItem !== "Move") {
             this.selected = []
             this.setState({ boundingBox: {} })
         }
-        if (this.props.alignType != prevProps.alignType && this.props.alignType)
+        if (alignType != prevProps.alignType && alignType)
             this.handleAlign()
-        if (this.props.activeItem === "Move") {
+        if (activeItem === "Move") {
             let prop = null, value = null
             if (dashed != prevProps.dashed) {
                 prop = 'dashed'
@@ -179,7 +179,7 @@ export default class Content extends React.Component {
             }
             if (prop) {
                 this.selected.forEach(s => {
-                    this.state.refs[s].current.updateStyle(prop, value).then(res => this.snapshot())
+                    refs[s].current.updateStyle(prop, value).then(res => this.snapshot())
                 })
                 return
             }
@@ -192,7 +192,7 @@ export default class Content extends React.Component {
             }
             if (prop) {
                 this.selected.forEach(s => {
-                    this.state.refs[s].current.setSize(prop, value).then(res => this.snapshot())
+                    refs[s].current.setSize(prop, value).then(res => this.snapshot())
                 })
                 return
             }
@@ -201,16 +201,16 @@ export default class Content extends React.Component {
 
     handleMouseMove(e) {
         this.setState({ positionX: e.clientX - this.offsetX, positionY: e.clientY - this.offsetY })
-
         const scale = this.state.zoom
+        const { refs } = this.state
         if (this.isDrawing) {
-            this.state.refs[this.currentItem].current.handleMoving(0, 0, scale * e.movementX, scale * e.movementY).then(res => { this.props.selectItem(null, { 'width': res.w, 'height': res.h }) })
-            this.setState({ objectW: e.clientX - this.offsetX - this.state.startX, objectH: e.clientY - this.state.startY - this.offsetY })
+            refs[this.currentItem].current.handleMoving(0, 0, scale * e.movementX, scale * e.movementY).then(res => { this.props.selectItem(null, { 'width': res.w, 'height': res.h }) })
+            this.setState({ objectW: e.clientX - this.offsetX - this.startX, objectH: e.clientY - this.startY - this.offsetY })
         }
         if (this.resizedItem != undefined) {
-            // this.state.refs[this.resizedItem].current.move(scale * e.movementX, scale * e.movementY)
-            const corner = this.state.refs[this.resizedItem].current.getCorner()
-            this.selected.forEach(s => { this.state.refs[s].current.setCorner(corner); this.state.refs[s].current.move(scale * e.movementX, scale * e.movementY) })
+            // refs[this.resizedItem].current.move(scale * e.movementX, scale * e.movementY)
+            const corner = refs[this.resizedItem].current.getCorner()
+            this.selected.forEach(s => { refs[s].current.setCorner(corner); refs[s].current.move(scale * e.movementX, scale * e.movementY) })
             this.isMoving = true
         }
     }
@@ -220,7 +220,8 @@ export default class Content extends React.Component {
         // this.setState({ startX: this.state.refs[id].state.x, startY: this.state.refd[id].state.y })
     }
     handleDeselect(id) {
-        const { boundingBox } = this.state
+        const { refs, boundingBox } = this.state
+        const { selectItem } = this.props
         delete boundingBox[id]
         const index = this.selected.indexOf(id);
         if (index > -1) {
@@ -228,33 +229,33 @@ export default class Content extends React.Component {
         }
         this.setState({ boundingBox })
         let type = new Set()
-        this.selected.forEach(s => this.state.refs[s].current instanceof Shape ? type.add('Shape') : this.state.refs[s].current instanceof Line ? type.add('Line') : this.state.refs[s].current instanceof Text ? type.add('Text') : type.add('None'))
-        this.props.selectItem(type, this.selected.length > 0 ? this.state.refs[this.selected[this.selected.length - 1]].current.getStyle() : {})
+        this.selected.forEach(s => refs[s].current instanceof Shape ? type.add('Shape') : refs[s].current instanceof Line ? type.add('Line') : refs[s].current instanceof Text ? type.add('Text') : type.add('None'))
+        selectItem(type, this.selected.length > 0 ? refs[this.selected[this.selected.length - 1]].current.getStyle() : {})
     }
     select(id) {
         let type = new Set()
-        const { boundingBox } = this.state
-        boundingBox[id] = this.state.refs[id].current.setBoundry()
+        const { refs, boundingBox } = this.state
+        const { selectItem } = this.props
+        boundingBox[id] = refs[id].current.setBoundry()
         this.setState({ boundingBox })
-        // this.setState({ boundingBox: { ...this.state.boundingBox, [id]: this.state.refs[id].current.setBoundry() } })
+        // this.setState({ boundingBox: { ...boundingBox, [id]: refs[id].current.setBoundry() } })
         this.selected = [...this.selected, id]
-        this.selected.forEach(s => this.state.refs[s].current instanceof Shape ? type.add('Shape') : this.state.refs[s].current instanceof Line ? type.add('Line') : this.state.refs[s].current instanceof Text ? type.add('Text') : type.add('None'))
-        this.props.selectItem(type, this.state.refs[id].current.getStyle())
+        this.selected.forEach(s => refs[s].current instanceof Shape ? type.add('Shape') : refs[s].current instanceof Line ? type.add('Line') : refs[s].current instanceof Text ? type.add('Text') : type.add('None'))
+        selectItem(type, refs[id].current.getStyle())
     }
     handleClickInside(id, ctrl = false) {
-        if (this.props.activeItem === "Move") {
+        const { activeItem, changeTool } = this.props
+        const { elements, refs, count } = this.state
+        if (activeItem === "Move") {
             if (this.isMouseUp) return
             this.currentItem = id
             this.select(id)
         }
-        else if (this.props.activeItem === "Erase") {
-            const { refs } = this.state
+        else if (activeItem === "Erase") {
             delete refs[id]
-            this.setState({ elements: this.state.elements.filter(e => e.id != id), refs }, () => this.snapshot())
+            this.setState({ elements: elements.filter(e => e.id != id), refs }, () => this.snapshot())
         }
         else if (this.props.activeItem == "Copy") {
-            const { elements, refs, count } = this.state
-            const { changeTool } = this.props
             const ref = React.createRef()
             const newProps = JSON.parse(JSON.stringify(refs[id].current.state))
             const newE = React.cloneElement(elements.filter(e => e.id == id)[0].e, { ...newProps, x: refs[id].current.state.x + 10, y: refs[id].current.state.y + 10, id: count, ref: ref, key: count })
@@ -262,7 +263,7 @@ export default class Content extends React.Component {
             if (ctrl) {
                 this.multiCopy.push(count)
             }
-            this.setState({ elements: [...this.state.elements, { id: count, e: newE }], refs, count: count + 1 }, () => { if (ctrl) return; changeTool(null, "Move"); this.select(count) })
+            this.setState({ elements: [...elements, { id: count, e: newE }], refs, count: count + 1 }, () => { if (ctrl) return; changeTool(null, "Move"); this.select(count) })
         }
     }
 
@@ -277,38 +278,45 @@ export default class Content extends React.Component {
     }
     handleLayoutUpdate(id, layout, w, h) {
         const { boundingBox } = this.state
+        const { selectItem } = this.props
         boundingBox[id] = layout
         this.setState({ boundingBox, objectW: w, objectH: h })
-        this.props.selectItem(null, { 'width': w, 'height': h })
+        selectItem(null, { 'width': w, 'height': h })
     }
     handleClick(e) {
+        const { selectItem } = this.props
         if (!this.isMouseUp) {
             this.selected = []
             this.setState({ boundingBox: {} })
-            this.props.selectItem(new Set(), {})
+            selectItem(new Set(), {})
             return
         }
-        this.setState({ startX: null, startY: null })
+        // this.setState({ startX: null, startY: null })
+        this.startX = null
+        this.startY = null
     }
     handleMouseDown(e) {
-        const { refs, zoom } = this.state
-        const { activeItem } = this.props
+        const { refs, zoom, count, elements } = this.state
+        const { activeItem, stroke, weight, dashed, shadow, cornerType, fill, size, font, rtl, bold, file } = this.props
+
         const ref = React.createRef()
         const scale = zoom
         let element = null
         this.isMouseUp = false
-        this.setState({ startX: e.clientX - this.offsetX, startY: e.clientY - this.offsetY })
+        // this.setState({ startX: e.clientX - this.offsetX, startY: e.clientY - this.offsetY })
+        this.startX = e.clientX - this.offsetX
+        this.startY = e.clientY - this.offsetY
         if (activeItem === "Move" || activeItem === "Erase" || activeItem === "Copy")
             return
         if (activeItem === "Line" || activeItem === "Arrow" || activeItem === "Bridge")
             element = <Line
                 points={[[scale * (e.clientX - this.offsetX), scale * (e.clientY - this.offsetY)], [scale * (e.clientX - this.offsetX), scale * (e.clientY - this.offsetY)]]}
-                arrow={activeItem == "Arrow"} stroke={this.props.stroke} weight={this.props.weight} dashed={this.props.dashed}
-                key={this.state.count}
-                id={this.state.count}
+                arrow={activeItem == "Arrow"} stroke={stroke} weight={weight} dashed={dashed}
+                key={count}
+                id={count}
                 path={[]}
-                shadow={this.props.shadow}
-                corner={this.props.cornerType}
+                shadow={shadow}
+                corner={cornerType}
                 ref={ref}
                 addLogic={this.handleAddLogic}
                 clickInside={this.handleClickInside}
@@ -318,34 +326,38 @@ export default class Content extends React.Component {
                 changeShape={this.handleShapeChange}
             />
         else if (activeItem === "Rectangle" || activeItem === "Circle" || activeItem === "Ellipse" || activeItem === "Triangle") {
-            element = <Shape x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} stroke={this.props.stroke} fill={this.props.fill} dashed={this.props.dashed} weight={this.props.weight} earase={this.state.earase} click={this.state.click}
-                key={this.state.count}
-                corner={this.props.cornerType}
-                shadow={this.props.shadow}
+            element = <Shape x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0}
+                shape={activeItem}
+                stroke={stroke} fill={fill}
+                dashed={dashed} weight={weight}
+                key={count}
+                corner={cornerType}
+                shadow={shadow}
                 clickInside={this.handleClickInside}
-                id={this.state.count}
+                id={count}
                 ref={ref}
                 handleBoundryClick={this.handleBoundryClick}
                 updateLayout={this.handleLayoutUpdate}
                 deselect={this.handleDeselect}
-                rotatable={this.props.activeItem === "Triangle"}
+                rotatable={activeItem === "Triangle"}
             />
         } else if (activeItem === "Image")
-            element = <Shape file={this.props.file[0]} src={null} x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)} w={0} h={0} shape={activeItem} key={this.state.count}
+            element = <Shape file={file[0]} src={null} x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)}
+                w={0} h={0} shape={activeItem} key={count}
                 clickInside={this.handleClickInside}
-                id={this.state.count}
+                id={count}
                 ref={ref}
                 handleBoundryClick={this.handleBoundryClick}
                 updateLayout={this.handleLayoutUpdate}
                 deselect={this.handleDeselect}
             />
-        else if (this.props.activeItem === "Text") {
+        else if (activeItem === "Text") {
             element = <Text x={scale * (e.clientX - this.offsetX)} y={scale * (e.clientY - this.offsetY)}
-                size={this.props.size}
-                stroke={this.props.stroke} fill={this.props.fill}
-                font={this.props.font} bold={this.props.bold}
-                rtl={this.props.rtl}
-                ref={ref} id={this.state.count} key={this.state.count}
+                size={size}
+                stroke={stroke} fill={fill}
+                font={font} bold={bold}
+                rtl={rtl}
+                ref={ref} id={count} key={count}
                 clickInside={this.handleClickInside}
                 handleBoundryClick={this.handleBoundryClick}
                 addLogic={this.handleAddLogic}
@@ -353,26 +365,27 @@ export default class Content extends React.Component {
                 deselect={this.handleDeselect}
                 updateLayout={this.handleLayoutUpdate} />
             this.isTexting = true
-            // this.currentItem = this.state.count
+            // this.currentItem = count
         }
         this.isDrawing = true
-        this.currentItem = this.state.count
+        this.currentItem = count
         if (element) {
-            refs[this.state.count] = ref
+            refs[count] = ref
             this.setState({
-                elements: [...this.state.elements, { id: this.state.count, e: element }],
+                elements: [...elements, { id: count, e: element }],
                 refs,
-                count: this.state.count + 1
+                count: count + 1
             })
         }
     }
     handleMouseUp(e) {
+        const { changeTool } = this.props
         if (this.isDrawing || this.isMoving || this.isTexting) {
             this.snapshot()
             this.isMouseUp = true
         }
         if (this.isDrawing || this.isTexting) {
-            this.props.changeTool(null, 'Move')
+            changeTool(null, 'Move')
             this.select(this.currentItem)
         }
         this.isTexting = false
@@ -417,8 +430,9 @@ export default class Content extends React.Component {
     align(type) {
         if (this.selected.length < 2)
             return
+        const { refs } = this.state
         let xs = [], ys = [], xs_ = [], ys_ = []
-        this.selected.forEach(s => { const loc = this.state.refs[s].current.getSize(); xs.push(loc.x); xs_.push(loc.x + loc.w); ys.push(loc.y); ys_.push(loc.y + loc.h) })
+        this.selected.forEach(s => { const loc = refs[s].current.getSize(); xs.push(loc.x); xs_.push(loc.x + loc.w); ys.push(loc.y); ys_.push(loc.y + loc.h) })
         let dir, pos
         switch (type) {
             case 'top':
@@ -438,15 +452,16 @@ export default class Content extends React.Component {
                 pos = Math.min(...xs)
                 break
         }
-        this.selected.forEach(s => this.state.refs[s].current.handleAlign(dir, pos))
+        this.selected.forEach(s => refs[s].current.handleAlign(dir, pos))
         this.snapshot()
     }
     distribute(type) {
         if (this.selected.length < 3)
             return
 
+        const { refs } = this.state
         let loc = {}
-        this.selected.forEach(s => loc[s] = this.state.refs[s].current.getSize())
+        this.selected.forEach(s => loc[s] = refs[s].current.getSize())
         const xs = Object.values(loc).map(l => l.x)
         const ys = Object.values(loc).map(l => l.y)
         const xs_ = Object.values(loc).map(l => l.x + l.w)
@@ -459,7 +474,7 @@ export default class Content extends React.Component {
         if (dis < 0)
             return
         let offset = miny
-        sorted.forEach((s, i) => { this.state.refs[s].current.setSize(type == 'v' ? 'y' : 'x', offset + i * dis); offset += (type == 'v' ? loc[s].h : loc[s].w) })
+        sorted.forEach((s, i) => { refs[s].current.setSize(type == 'v' ? 'y' : 'x', offset + i * dis); offset += (type == 'v' ? loc[s].h : loc[s].w) })
         this.snapshot()
 
     }
@@ -467,6 +482,7 @@ export default class Content extends React.Component {
         if (this.ignore)
             return
         const scale = this.state.zoom
+        const { refs } = this.state
         if (e.shiftKey) {
             if (e.key == 'v' || e.key == 'V') {
                 this.distribute('v')
@@ -481,7 +497,7 @@ export default class Content extends React.Component {
         }
         let dx = 0, dy = 0
         let xs = [], ys = [], xs_ = [], ys_ = []
-        this.selected.forEach(s => { const loc = this.state.refs[s].current.getSize(); xs.push(loc.x); xs_.push(loc.x + loc.w); ys.push(loc.y); ys_.push(loc.y + loc.h) })
+        this.selected.forEach(s => { const loc = refs[s].current.getSize(); xs.push(loc.x); xs_.push(loc.x + loc.w); ys.push(loc.y); ys_.push(loc.y + loc.h) })
         let type = null
         switch (e.key) {
             case "Up":
@@ -506,7 +522,7 @@ export default class Content extends React.Component {
                 break
         }
         if (e.shiftKey && type) this.align(type)
-        else this.selected.forEach(s => this.state.refs[s].current.move(scale * dx, scale * dy))
+        else this.selected.forEach(s => refs[s].current.move(scale * dx, scale * dy))
         if (dx != 0 || dy != 0)
             this.snapshot()
         this.ignore = true
@@ -525,19 +541,20 @@ export default class Content extends React.Component {
         this.isTexting = false
     }
     snapshot() {
+        const { elements } = this.state
         if (this.currentState < this.history.length - 1) {
             this.history = this.history.slice(0, this.currentState + 1)
         }
-
-        this.history.push(this.state.elements.map(e => { return ({ id: e.id, type: e.e.type, ref: e.e.ref, state: JSON.stringify(e.e.ref.current.state), props: e.e.ref.current.props }) }))
+        this.history.push(elements.map(e => { return ({ id: e.id, type: e.e.type, ref: e.e.ref, state: JSON.stringify(e.e.ref.current.state), props: e.e.ref.current.props }) }))
         this.currentState++
     }
     handleSave() {
         var svg = this.canvas.current
         var serializer = new XMLSerializer();
         var source = serializer.serializeToString(svg);
+        const { bgColor } = this.state
         //add name spaces.
-        source = source.replace(/style="/, `style="background: ${this.state.bgColor};`);
+        source = source.replace(/style="/, `style="background: ${bgColor};`);
         if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
             source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
         }
@@ -558,7 +575,7 @@ export default class Content extends React.Component {
     }
     transformation(node, index) {
         if (node.name === 'g' && node.attribs.element) {
-            const { refs, count } = this.state
+            const { elements, refs, count } = this.state
             const ref = React.createRef()
             let element = null
             refs[count] = ref
@@ -578,7 +595,7 @@ export default class Content extends React.Component {
             } else if (node.attribs.element === "Text") {
                 element = React.createElement(Text, props)
             }
-            this.setState({ elements: [...this.state.elements, { id: this.state.count, e: element }], refs, count: this.state.count + 1 })
+            this.setState({ elements: [...elements, { id: count, e: element }], refs, count: count + 1 })
         }
     }
     onLoad(e) {
